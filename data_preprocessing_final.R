@@ -89,7 +89,7 @@ df_ghana <- df_ghana %>% filter(survivaltime <= 60)
 
 
 ## convert categorical features to factors -------------------------------------
-# sex 
+# sex
 df_ghana$sex <- factor(df_ghana$sex,
                        levels = 1:2,
                        labels = c("male", "female"))
@@ -100,7 +100,7 @@ df_ghana$place_residence <- factor(
   labels = c("urban", "rural")
 )
 
-# wealth_idx 
+# wealth_idx
 df_ghana$wealth_idx <- factor(
   df_ghana$wealth_idx,
   levels = 1:5,
@@ -111,7 +111,7 @@ df_ghana$wealth_idx <- factor(
              "richest")
 )
 
-# multiples 
+# multiples
 df_ghana$multiples <- factor(
   df_ghana$multiples,
   levels = 0:3,
@@ -123,7 +123,7 @@ df_ghana$multiples <- factor(
   )
 )
 
-# place_of_delivery: collapse 13 detailed categories into 4 broader categories 
+# place_of_delivery: collapse 13 detailed categories into 4 broader categories
 df_ghana <- df_ghana %>%
   mutate(place_of_delivery = as.numeric(substring(as.character(place_of_delivery),
                                                   1, 1)))
@@ -138,7 +138,7 @@ df_ghana$place_of_delivery <- factor(
   )
 )
 
-# dpt1_vaccination: create designated category for children >3 years 
+# dpt1_vaccination: create designated category for children >3 years
 df_ghana$dpt1_vaccination[df_ghana$survivaltime > 36]  <- 4
 df_ghana$dpt1_vaccination <- factor(
   df_ghana$dpt1_vaccination,
@@ -158,7 +158,7 @@ df_ghana$dpt1_vaccination <- factor(
 # set seed for reproducibility
 set.seed(123)
 
-# create an imputation model 
+# create an imputation model
 imputation_model <- mice(df_ghana, m = 1, method = "pmm")
 
 # rename original dataset with missing values
@@ -184,12 +184,12 @@ summary(df_ghana)
 
 
 ## survivaltime distributions of dead vs alive children ------------------------
-# convert "alive" variable to factor for plotting 
+# convert "alive" variable to factor for plotting
 df_ghana$alive <- factor(df_ghana$alive,
                          levels = c(0, 1),
                          labels = c("dead", "alive"))
 
-# plot 2 histograms of survivaltime distributions 
+# plot 2 histograms of survivaltime distributions
 plot_dist <-
   ggplot(df_ghana,
          aes(x = survivaltime)) +
@@ -203,23 +203,23 @@ plot_dist
 # survivaltime distribution of dead children is very uneven, a majority of children dies <10 months, with a large majority at birth (>750),
 # for ages >20 at many times there are no events, while at some time points there is a large number of events
 
-# determine times at which deaths >12 months occur 
-sort(unique(df_ghana["survivaltime"][df_ghana["alive"] == "dead"])) 
+# determine times at which deaths >12 months occur
+sort(unique(df_ghana["survivaltime"][df_ghana["alive"] == "dead"]))
 # events only occur for t>12 at t = 24; t = 36; t = 48; t = 60 (full years)
 
 
 ## Kaplan-Meier survival curves ------------------------------------------------
-# create surv object 
+# create surv object
 surv <- Surv(time = df_ghana$survivaltime, event = df_ghana$status)
 
 # summary of surv object
 summary(surv)
 
-# Kaplan Meier 
-km_fit <- survfit(surv ~ 1, 
+# Kaplan Meier
+km_fit <- survfit(surv ~ 1,
                 data = df_ghana)
 
-# visualize Kaplan-Meier surves with survminer 
+# visualize Kaplan-Meier surves with survminer
 plot_km <- ggsurvplot(
   km_fit,
   data = df_ghana,
@@ -232,14 +232,14 @@ plot_km <- ggsurvplot(
   legend = "none"
 )
 plot_km
-# clear pattern of stepwise decrease in survival probability at times that events occur 
+# clear pattern of stepwise decrease in survival probability at times that events occur
 
 
-# convert "alive" variable to back to numeric 
+# convert "alive" variable to back to numeric
 df_ghana$alive <- as.numeric(df_ghana$alive)
 
 ## save survivaltime distribution plot and Kaplan-Meier curve ------------------
-# save survivaltime distribution plot 
+# save survivaltime distribution plot
 ggsave(
   fig("plot_dist.pdf"),
   plot = plot_dist,
@@ -248,7 +248,7 @@ ggsave(
   device = "pdf"
 )
 
-# save Kaplan-Meier curve 
+# save Kaplan-Meier curve
 ggsave(
   fig("plot_km.pdf"),
   plot = plot_km,
