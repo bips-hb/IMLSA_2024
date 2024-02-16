@@ -288,16 +288,6 @@ names(df_ice_deepsurv_merge)[names(df_ice_deepsurv_merge) == "mother_age.x"] = "
 df_ice_deepsurv_plot <-
   df_ice_deepsurv_merge[df_ice_deepsurv_merge[, "time"] %in% c(1, 10, 20, 30, 40, 50, 59), ]
 
-# extract relevant pdp results for plotting
-#df_pdp_deepsurv <-
-#  pdp_ice_deepsurv$result[(pdp_ice_deepsurv$result$`_vname_` == "mother_age") &
-#                            (pdp_ice_deepsurv$result$`_times_` %in% times), c("_x_", "_yhat_")]
-# rename columns
-#names(df_pdp_deepsurv)[names(df_pdp_deepsurv) == "_x_"] = "mother_age"
-#names(df_pdp_deepsurv)[names(df_pdp_deepsurv) == "_yhat_"] = "yhat"
-# add time column
-#df_pdp_deepsurv["time"] = rep(0:59, each = length(unique(df_pdp_deepsurv$mother_age)))
-
 # aggregate centered ice values to obtain centered pdp values
 df_pdp_deepsurv_center <- aggregate(yhat ~ time + mother_age,
                                     data = df_ice_deepsurv_merge[, c("ids", "mother_age", "yhat", "time")],
@@ -353,13 +343,12 @@ plot_pdp_ice_deepsurv <- ggplot() +
     )))
   ) +
   scale_color_viridis_c() +
-  theme_bw() +
   ggtitle("", subtitle = "deepsurv") +
   theme_bw() +
   scale_x_continuous(breaks = seq(15, 50, 5)) +
   scale_y_continuous(limits = c(-0.9, 0.25),
                      breaks = seq(-0.9, 0.25, by = 0.2)) +
-  ylab(expression(paste("prediction"))) +
+  ylab("prediction") +
   theme(
     legend.position = "bottom",
     plot.subtitle = element_text(size = 14),
@@ -401,13 +390,12 @@ plot_ice_deepsurv <- ggplot() +
     )))
   ) +
   scale_color_viridis_c() +
-  theme_bw() +
   ggtitle("", subtitle = "deepsurv") +
   theme_bw() +
   scale_x_continuous(breaks = seq(15, 50, 5)) +
   scale_y_continuous(limits = c(-0.9, 0.25),
                      breaks = seq(-0.9, 0.25, by = 0.2)) +
-  ylab(expression(paste("prediction"))) +
+  ylab("prediction") +
   theme(
     legend.position = "bottom",
     plot.subtitle = element_text(size = 14),
@@ -471,13 +459,6 @@ names(df_ice_ranger_merge)[names(df_ice_ranger_merge) == "mother_age.x"] <-
 df_ice_ranger_plot <-
   df_ice_ranger_merge[df_ice_ranger_merge[, "time"] %in% c(1, 10, 20, 30, 40, 50, 59), ]
 
-#pdp_df <- pdp_ice_ranger$result[(pdp_ice_ranger$result$`_vname_` == "mother_age") &
-#                                  (pdp_ice_ranger$result$`_times_` %in% times), c("_x_", "_yhat_")]
-
-#names(pdp_df)[names(pdp_df) == "_x_"] = "mother_age"
-#names(pdp_df)[names(pdp_df) == "_yhat_"] = "yhat"
-#pdp_df["time"] = rep(0:59, each = length(unique(pdp_df$mother_age)))
-
 # aggregate centered ice values to obtain centered pdp values
 df_pdp_ranger_center <- aggregate(yhat ~ time + mother_age,
                            data = ice_df_merge[, c("ids", "mother_age", "yhat", "time")],
@@ -530,13 +511,12 @@ plot_pdp_ice_ranger <- ggplot() +
     position = position_jitter(width = 0.01 *  diff(range(df_pdp_ranger_center[, "mother_age"])))
   ) +
   scale_color_viridis_c() +
-  theme_bw() +
   ggtitle("", subtitle = "ranger") +
   theme_bw() +
   scale_x_continuous(breaks = seq(15, 50, 5)) +
   scale_y_continuous(limits = c(-0.25, 0.05),
                      breaks = seq(-0.25, 0.05, by = 0.05)) +
-  ylab(expression(paste("prediction"))) +
+  ylab("prediction") +
   theme(
     legend.position = "bottom",
     plot.subtitle = element_text(size = 14),
@@ -576,13 +556,12 @@ plot_ice_ranger <- ggplot() +
     position = position_jitter(width = 0.01 *  diff(range(df_pdp_ranger_center[, "mother_age"])))
   ) +
   scale_color_viridis_c() +
-  theme_bw() +
   ggtitle("", subtitle = "ranger") +
   theme_bw() +
   scale_x_continuous(breaks = seq(15, 50, 5)) +
   scale_y_continuous(limits = c(-0.25, 0.05),
                      breaks = seq(-0.25, 0.05, by = 0.05)) +
-  ylab(expression(paste("prediction"))) +
+  ylab("prediction") +
   theme(
     legend.position = "bottom",
     plot.subtitle = element_text(size = 14),
@@ -686,7 +665,6 @@ plot_ale_coxph <- ggplot() +
   ) +
   scale_color_manual(values = c("#a9def9", "#ede7b1", "#ff99c8",
                                 "#e4c1f9")) +
-  theme_bw() +
   ggtitle("", subtitle = "coxph") +
   theme_bw() +
   scale_x_continuous(breaks = c(0, 10, 20, 30, 40, 50, 59)) +
@@ -752,7 +730,7 @@ plot_ale_blackboost <- ggplot() +
   ggtitle("", subtitle = "blackboost") +
   scale_x_continuous(breaks = c(0, 10, 20, 30, 40, 50, 59)) +
   scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.2)) +
-  ylab(expression(paste("prediction"))) +
+  ylab("prediction") +
   theme(
     legend.position = "bottom",
     plot.subtitle = element_text(size = 14),
