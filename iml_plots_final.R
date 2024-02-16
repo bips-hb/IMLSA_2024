@@ -2,6 +2,8 @@
 # packages
 library(survex)
 library(ggplot2)
+library(ranger)
+library(ggbeeswarm)
 
 
 
@@ -234,12 +236,12 @@ ggsave(
   width = 14,
   height = 6,
   device = "pdf"
-) 
+)
 
 
 
 #------------------------------------------------------------------------------#
-####  Individual Conditional Expectation (ICE) & Partial Dependence (PDP)   ####  
+####  Individual Conditional Expectation (ICE) & Partial Dependence (PDP)   ####
 #------------------------------------------------------------------------------#
 
 
@@ -422,7 +424,7 @@ plot_ice_deepsurv <- ggplot() +
       size = 0.3
     )
   )
-plot_ice_deepsurv  
+plot_ice_deepsurv
 
 
 ## ranger ----------------------------------------------------------------------
@@ -800,7 +802,7 @@ ggsave(
 # set up ranger model with tuned hyperparameters using ranger package
 ranger_rsf <- ranger(
   Surv(survivaltime, status) ~ .,
-  data = df_ghana[train_indices, ],
+  data = df_ghana[train_indices, -c(3)],
   num.trees = 967,
   mtry = 6,
   max.depth = 6,
@@ -809,11 +811,11 @@ ranger_rsf <- ranger(
 )
 
 # set up new explainer using ranger model from ranger package
-ranger_explainer2 <- explain(
-  ranger_rsf,
-  data = df_ghana[test_indices,-c(1, 2, 3)],
-  y = Surv(df_ghana[test_indices, ]$survivaltime,
-           df_ghana[test_indices, ]$status)
+ranger_explainer2 <- survex::explain(
+    ranger_rsf,
+    data = df_ghana[test_indices, -c(1, 2, 3)],
+    y = Surv(df_ghana[test_indices,]$survivaltime,
+             df_ghana[test_indices,]$status)
 )
 
 ## select interesting instances ------------------------------------------------
@@ -1041,4 +1043,576 @@ ggsave(
 #------------------------------------------------------------------------------#
 
 
-       plot = ice_grid, width = 14, height = 6, device = "pdf") 
+## compute shap values for all observations in test set ------------------------
+survshap_global_ranger <-
+    model_survshap(ranger_explainer2, df_ghana[test_indices,-c(1, 2, 3)])
+
+
+## preprocess results for aggregated shap plot ---------------------------------
+# rename results
+agg_results <- survshap_global_ranger
+# aggregate shap values of all observations
+agg_results$result <-
+    aggregate_shap_multiple_observations(agg_results$result, colnames(agg_results$result[[1]]), function(x)
+        mean(abs(x)))
+agg_results$aggregate <-
+    apply(do.call(rbind, agg_results$aggregate), 2, function(x)
+        mean(abs(x)))
+df_agg <- c(list(agg_results))
+
+# convert data to long format
+df_agg_long <- lapply(df_agg, function(x) {
+    label <- attr(x, "label")
+    cols <- sort(head(order(x$aggregate, decreasing = TRUE), 12))
+    sv <- x$result[, cols]
+    times <- x$eval_times
+    transposed <- as.data.frame(cbind(times = times, sv))
+    rownames(transposed) <- NULL
+    long_df <- cbind(times = transposed$times,
+                     stack(transposed, select = -times),
+                     label = label)
+})
+df_agg_long <- do.call(rbind, df_agg_long)
+
+
+## create custom plot of shap values -------------------------------------------
+plot_shap_agg <- ggplot() +
+    geom_path(data = df_agg_long,
+              aes(
+                  x = times,
+                  y = values,
+                  color = ind,
+                  group = ind
+              ),
+              linewidth = 0.8) +
+    scale_color_manual(
+        "feature",
+        values = c(
+            "#ffff99",
+            "#b15928",
+            "#a6cee3",
+            "#1f78b4",
+            "#fb9a99",
+            "#e31a1c",
+            "#fdbf6f",
+            "#ff7f00",
+            "#b2df8a",
+            "#33a02c",
+            "#cab2d6",
+            "#6a3d9a"
+        ),
+        drop = FALSE
+    ) +
+    theme_bw() +
+    ggtitle("", subtitle = "ranger") +
+    scale_x_continuous(breaks = c(0, 10, 20, 30, 40, 50, 60)) +
+    scale_y_continuous(limits = c(0, 0.15),
+                       breaks = seq(0, 0.15, by = 0.05)) +
+    ylab("Average |SurvSHAP(t)| value") +
+    xlab("time") +
+    theme(
+        legend.position = "bottom",
+        plot.subtitle = element_text(size = 14),
+        plot.margin = margin(0.7, 0.7, 0.7, 0.7, "cm"),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size = 14),
+        legend.key.size = unit(1.5, "lines"),
+        legend.title = element_text(size = 14, face = "bold"),
+        legend.text = element_text(size = 12),
+        legend.background = element_rect(
+            colour = "grey34",
+            fill = "white",
+            linetype = "solid",
+            linewidth = 0.3
+        )
+    )
+plot_shap_agg
+
+
+## preprocess results for beeswarm plot ----------------------------------------
+# rename results
+beeswarm_results <- survshap_global_ranger
+
+# convert shap value data to long format
+df_beeswarm <- as.data.frame(do.call(rbind, beeswarm_results$aggregate))
+df_beeswarm <- df_beeswarm[, preset_list_all]
+df_beeswarm_stacked <- stack(df_beeswarm)
+
+# extract feature values for observations for which shap values were computed
+original_values <- as.data.frame(beeswarm_results$variable_values)[, cols]
+original_values <- original_values[, preset_list_all]
+
+# convert factor categories to characters
+factor_columns <- sapply(original_values, is.factor)
+original_values[factor_columns] <-
+    lapply(original_values[factor_columns], as.character)
+
+# convert feature values data to long format
+original_values_stacked <- stack(original_values)
+
+# combine shap values of observations with feature values
+df_beeswarm_plot <- cbind(df_beeswarm_stacked, original_values_stacked)
+
+# rename columns
+colnames(df_beeswarm_plot) <- c("shap_value", "feature", "value", "ind")
+
+# select interesting numerical features to be plotted
+total = c(
+    "total_children",
+    "total_dead_sons",
+    "total_dead_daughters",
+    "total_births_5years",
+    "total_children"
+)
+
+# create dataframe containing only interesting numerical features to be plotted
+df_beeswarm_total <- df_beeswarm_plot %>%
+    filter(feature %in% total)
+
+# convert feature values to numeric
+df_beeswarm_total$value <- as.numeric(df_beeswarm_total$value)
+
+# create dataframe for plotting dpt1_vaccination feature (categorical)
+df_beeswarm_dpt1 <-
+    subset(df_beeswarm_plot, feature == "dpt1_vaccination")
+
+
+## create custom beeswarm plot for numerical features  -------------------------
+plot_beeswarm_total <-
+    ggplot(data = df_beeswarm_total, aes(x = shap_value, y = feature, color = value)) +
+    geom_quasirandom() +
+    theme_bw() +
+    ggtitle("", subtitle = "ranger") +
+    xlab("Aggregated SurvSHAP(t) value") +
+    ylab("") +
+    scale_color_gradientn(colors = c(
+        "#fcfdbf",
+        "#feb078",
+        "#fec9d7",
+        "#b73779",
+        "#721f81",
+        "#2c115f",
+        "#000004"
+    )) +
+    theme(
+        legend.position = "right",
+        plot.subtitle = element_text(size = 14),
+        plot.margin = margin(0.7, 0.7, 0.7, 0.7, "cm"),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size = 14),
+        legend.key.size = unit(1.5, "lines"),
+        legend.title = element_text(size = 14, face = "bold"),
+        legend.text = element_text(size = 12),
+        legend.background = element_rect(
+            colour = "grey34",
+            fill = "white",
+            linetype = "solid",
+            size = 0.3
+        )
+    )
+plot_beeswarm_total
+
+## create custom beeswarm plot for dpt1_vaccination feature  -------------------
+plot_beeswarm_dpt1 <-
+    ggplot(data = df_beeswarm_dpt1, aes(x = shap_value, y = feature, color = value)) +
+    scale_color_manual(values = c(
+        "#a9def9",
+        "#ffa1a1",
+        "#ede7b1",
+        "#ff99c8",
+        "#e4c1f9",
+        "#baffc9"
+    )) +
+    geom_quasirandom() +
+    theme_bw() +
+    ggtitle("", subtitle = "ranger") +
+    xlab("Aggregated SurvSHAP(t) value") +
+    ylab("") +
+    theme(
+        legend.position = "right",
+        plot.subtitle = element_text(size = 14),
+        plot.margin = margin(0.7, 0.7, 0.7, 0.7, "cm"),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size = 14),
+        legend.key.size = unit(1.5, "lines"),
+        legend.title = element_text(size = 14, face = "bold"),
+        legend.text = element_text(size = 12),
+        legend.background = element_rect(
+            colour = "grey34",
+            fill = "white",
+            linetype = "solid",
+            size = 0.3
+        )
+    )
+plot_beeswarm_dpt1
+
+
+## create plot grid and save plots ---------------------------------------------
+# create grid of beeswarm plots
+beeswarm_grid <-
+    ggarrange(
+        plot_beeswarm_total,
+        plot_beeswarm_dpt1,
+        ncol = 1,
+        nrow = 2,
+        common.legend = FALSE
+    )
+beeswarm_grid
+
+# create grid of aggregate shap plots
+shap_agg_grid <-
+    ggarrange(
+        plot_shap_agg,
+        beeswarm_grid,
+        ncol = 2,
+        nrow = 1,
+        common.legend = FALSE
+    ) +
+    theme(plot.margin = margin(0.1, 0.1, 0.4, 0.1, "cm"))
+shap_agg_grid
+
+# save grid of shap plots
+ggsave(
+    fig("shap_agg_grid.pdf"),
+    plot = shap_agg_grid,
+    width = 14,
+    height = 6,
+    device = "pdf"
+)
+
+#------------------------------------------------------------------------------#
+####        Local Interpretable Model-Agnostic Explanations (LIME)          ####
+#------------------------------------------------------------------------------#
+
+## compute lime values ---------------------------------------------------------
+# compute lime values for individual 786
+survlime_ranger_786 <- predict_parts(ranger_explainer2,
+                                     individual_786,
+                                     type = "survlime")
+
+# compute lime values for individual 1121
+survlime_ranger_1121 <- predict_parts(ranger_explainer2,
+                                      individual_1121,
+                                      type = "survlime")
+
+
+
+### extract relevant lime results for plotting ---------------------------------
+## extract relevant lime results for plotting for individual 1121 --------------
+# extract relevant local importance values
+local_importance_1121 <-
+    as.numeric(survlime_ranger_1121$result) * as.numeric(survlime_ranger_1121$variable_values)
+
+# convert relevant local importance values to dataframe
+df_lime_1121 <- data.frame(
+    variable_names = names(survlime_ranger_1121$variable_values),
+    variable_values = as.numeric(survlime_ranger_1121$variable_values),
+    beta = as.numeric(survlime_ranger_1121$result),
+    sign_beta = as.factor(sign(
+        as.numeric(survlime_ranger_1121$result)
+    )),
+    sign_local_importance = as.factor(sign(local_importance_1121)),
+    local_importance = local_importance_1121
+)
+
+# sort local importance values
+df_lime_1121 <-
+    df_lime_1121[head(order(abs(df_lime_1121$local_importance), decreasing = TRUE), 12),]
+
+# clean feature names
+df_lime_1121$variable_names <-
+    c(
+        "age_head",
+        "mother_age",
+        "total_dead_daughters",
+        "total_children",
+        "place_of_delivery.public/government_facility",
+        "place_residence.urban",
+        "dpt1_vaccination.no",
+        "wealth_idx.richer",
+        "multiples.secondborn_multiples",
+        "total_dead_sons",
+        "total_births_5years",
+        "sex.male"
+    )
+
+# exclude all features with local importance = 0
+df_lime_1121 <- subset(df_lime_1121, local_importance != 0)
+
+# exclude all features with local importance = 0
+df_sf_1121 <- data.frame(
+    times = c(
+        survlime_ranger_1121$black_box_sf_times,
+        survlime_ranger_1121$expl_sf_times
+    ),
+    sfs = c(
+        survlime_ranger_1121$black_box_sf,
+        survlime_ranger_1121$expl_sf
+    ),
+    type = c(
+        rep(
+            "black box survival function",
+            length(survlime_ranger_1121$black_box_sf)
+        ),
+        rep(
+            "SurvLIME explanation survival function",
+            length(survlime_ranger_1121$expl_sf)
+        )
+    )
+)
+
+## extract relevant lime results for plotting for individual 786 ---------------
+# extract relevant local importance values
+local_importance_786 <-
+    as.numeric(survlime_ranger_786$result) * as.numeric(survlime_ranger_786$variable_values)
+
+# convert relevant local importance values to dataframe
+df_lime_786 <- data.frame(
+    variable_names = names(survlime_ranger_786$variable_values),
+    variable_values = as.numeric(survlime_ranger_786$variable_values),
+    beta = as.numeric(survlime_ranger_786$result),
+    sign_beta = as.factor(sign(as.numeric(
+        survlime_ranger_786$result
+    ))),
+    sign_local_importance = as.factor(sign(local_importance_786)),
+    local_importance  = local_importance_786
+)
+
+# sort local importance values
+df_lime_786 <-
+    df_lime_786[head(order(abs(df_lime_786$local_importance), decreasing = TRUE), 12),]
+
+# clean feature names
+df_lime_786$variable_names <-
+    c(
+        "mother_age",
+        "age_head",
+        "multiples.single_child",
+        "wealth_idx.poorest",
+        "total_births_5years",
+        "total_children",
+        "dpt1_vaccination.vaccination_date_on_card",
+        "wealth_idx.poorer",
+        "total_dead_sons",
+        "total_dead_daughters",
+        "sex.male",
+        "place_residence.urban"
+    )
+
+# exclude all features with local importance = 0
+df_lime_786 <- subset(df_lime_786, local_importance != 0)
+
+# exclude all features with local importance = 0
+df_sf_786 <- data.frame(
+    times = c(
+        survlime_ranger_786$black_box_sf_times,
+        survlime_ranger_786$expl_sf_times
+    ),
+    sfs = c(
+        survlime_ranger_786$black_box_sf,
+        survlime_ranger_786$expl_sf
+    ),
+    type = c(
+        rep(
+            "black box survival function",
+            length(survlime_ranger_786$black_box_sf)
+        ),
+        rep(
+            "SurvLIME explanation survival function",
+            length(survlime_ranger_786$expl_sf)
+        )
+    )
+)
+
+
+## create custom plots of local importance values  -----------------------------
+# create custom plots of local importance values for individual 1121
+plot_local_1121 <-
+    ggplot(data = df_lime_1121,
+           aes(
+               x = local_importance,
+               y = reorder(variable_names, local_importance, abs),
+               fill = sign_local_importance
+           )) +
+    geom_col() +
+    scale_fill_manual("", values = c(
+        "-1" = "#cc4778",
+        "0" = "#ffffff",
+        "1" = "#21918c"
+    )) +
+    ggtitle("C1: Child dead at t=0", subtitle = "ranger") +
+    theme_bw() +
+    ylab("") +
+    xlab("SurvLIME local importance") +
+    theme(
+        legend.position = "none",
+        plot.subtitle = element_text(size = 14),
+        plot.margin = margin(0.7, 0.7, 0.7, 0.7, "cm"),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size = 14)
+    )
+plot_local_1121
+
+# create custom plots of local importance values for individual 1121
+plot_sf_1121 <-
+    ggplot(data = df_sf_1121, aes(
+        x = times,
+        y = sfs,
+        group = type,
+        color = type
+    )) +
+    geom_line(linewidth = 0.8) +
+    theme_bw() +
+    scale_x_continuous(breaks = c(0, 10, 20, 30, 40, 50, 60)) +
+    scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.2)) +
+    labs(x = "time", y = "survival function value") +
+    ggtitle("C1: Child dead at t=0", subtitle = "ranger") +
+    scale_color_manual(
+        "",
+        values = c(
+            "black box survival function" = "#440154",
+            "SurvLIME explanation survival function" = "#fde725"
+        )
+    ) +
+    theme(
+        legend.position = "bottom",
+        plot.subtitle = element_text(size = 14),
+        plot.margin = margin(0.7, 0.7, 0.7, 0.7, "cm"),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size = 14),
+        legend.key.size = unit(1.5, "lines"),
+        legend.title = element_text(size = 14, face = "bold"),
+        legend.text = element_text(size = 12),
+        legend.background = element_rect(
+            colour = "grey34",
+            fill = "white",
+            linetype = "solid",
+            size = 0.3
+        )
+    )
+plot_sf_1121
+
+# create custom plots of local importance values for individual 786
+plot_local_786 <-
+    ggplot(data = df_lime_786,
+           aes(
+               x = local_importance,
+               y = reorder(variable_names, local_importance, abs),
+               fill = sign_local_importance
+           )) +
+    geom_col() +
+    scale_fill_manual("", values = c(
+        "-1" = "#cc4778",
+        "0" = "#ffffff",
+        "1" = "#21918c"
+    )) +
+    ggtitle("C1: Child dead at t=0", subtitle = "ranger") +
+    theme_bw() +
+    ylab("") +
+    xlab("SurvLIME local importance") +
+    theme(
+        legend.position = "none",
+        plot.subtitle = element_text(size = 14),
+        plot.margin = margin(0.7, 0.7, 0.7, 0.7, "cm"),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size = 14)
+    )
+plot_local_786
+
+# create custom plots of local importance values for individual 786
+plot_sf_786 <-
+    ggplot(data = df_sf_786, aes(
+        x = times,
+        y = sfs,
+        group = type,
+        color = type
+    )) +
+    geom_line(linewidth = 0.8) +
+    theme_bw() +
+    scale_x_continuous(breaks = c(0, 10, 20, 30, 40, 50, 60)) +
+    scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.2)) +
+    labs(x = "time", y = "survival function value") +
+    ggtitle("C1: Child dead at t=0", subtitle = "ranger") +
+    scale_color_manual(
+        "",
+        values = c(
+            "black box survival function" = "#440154",
+            "SurvLIME explanation survival function" = "#fde725"
+        )
+    ) +
+    theme(
+        legend.position = "bottom",
+        plot.subtitle = element_text(size = 14),
+        plot.margin = margin(0.7, 0.7, 0.7, 0.7, "cm"),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size = 14),
+        legend.key.size = unit(1.5, "lines"),
+        legend.title = element_text(size = 14, face = "bold"),
+        legend.text = element_text(size = 12),
+        legend.background = element_rect(
+            colour = "grey34",
+            fill = "white",
+            linetype = "solid",
+            size = 0.3
+        )
+    )
+plot_sf_786
+
+
+## create plot grid and save plots ---------------------------------------------
+# create grid of survival function plots
+surv_grid <-
+    ggarrange(
+        plot_sf_1121 ,
+        plot_sf_786 ,
+        ncol = 2,
+        nrow = 1,
+        common.legend = TRUE,
+        legend = "bottom"
+    ) +
+    theme(plot.margin = margin(0.1, 0.1, 0.4, 0.1, "cm"))
+surv_grid
+
+# save grid of survival function plots
+ggsave(
+    fig("surv_grid.pdf"),
+    plot = surv_grid,
+    width = 14,
+    height = 6,
+    device = "pdf"
+)
+
+# create grid of local importance plots
+lime_grid <-
+    ggarrange(
+        plot_local_1121 ,
+        plot_local_786 ,
+        ncol = 2,
+        nrow = 1,
+        common.legend = FALSE
+    ) +
+    theme(plot.margin = margin(0.1, 0.1, 0.4, 0.1, "cm"))
+lime_grid
+
+# save grid of local importance plots
+ggsave(
+    fig("lime_grid.pdf"),
+    plot = lime_grid,
+    width = 14,
+    height = 6,
+    device = "pdf"
+)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
