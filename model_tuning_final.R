@@ -7,7 +7,7 @@ library(keras)
 library(wesanderson)
 library(ggplot2)
 
-# figure path 
+# figure path
 fig_path <- here::here("figures_iml")
 if (!file.exists(fig_path)) dir.create(fig_path)
 fig <- function(x) here::here(fig_path, x)
@@ -65,6 +65,19 @@ task_train <- as_task_surv(
   time = "survivaltime",
   event = "status",
   data = df_ghana[train_indices,-c(1, 2, 3)]
+)
+
+# training task for cox model (delete dpt1_vaccination == "don't know" to avoid convergence issues)
+
+df_train_cox <- df_ghana[train_indices, ]
+df_train_cox <- df_train_cox[df_train_cox$dpt1_vaccination != "don't know",]
+
+task_train_cox <- as_task_surv(
+    survival::Surv(df_train_cox[, "survivaltime"],
+                   df_train_cox[, "status"]) ~ .,
+    time = "survivaltime",
+    event = "status",
+    data = df_train_cox[,-c(1, 2, 3)]
 )
 
 # validation task with factor columns
@@ -287,7 +300,7 @@ learner_deepsurv_tuned$train(task_train_encoded)
 coxph_learner <- lrn("surv.coxph")
 
 # train learner
-coxph_learner$train(task_train)
+coxph_learner$train(task_train_cox)
 
 #------------------------------------------------------------------------------#
 ####                        Model Performance                               ####
