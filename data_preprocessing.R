@@ -21,7 +21,7 @@ fig <- function(x)
 
 
 ## import birth recode data ----------------------------------------------------
-path <- "/Users/sophielangbein/Desktop/PhD/Daten"
+path <- "" # add path
 data_ghbr2014 <-
   read_sas(paste(path, "/Ghana_2014/GHBR72SD/GHBR72FL.SAS7BDAT",
                  sep = ""))
