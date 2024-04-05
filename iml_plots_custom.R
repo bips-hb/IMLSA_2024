@@ -25,9 +25,9 @@ fig <- function(x)
 ## ranger
 ranger_explainer <- survex::explain(
   learner_ranger_tuned,
-  data = df_ghana_encoded[test_indices,-c(1, 2, 3)],
-  y = Surv(df_ghana_encoded[test_indices, ]$survivaltime,
-           df_ghana_encoded[test_indices, ]$status),
+  data = df_ghana[test_indices,-c(1, 2, 3)],
+  y = Surv(df_ghana[test_indices, ]$survivaltime,
+           df_ghana[test_indices, ]$status),
   times = 0:60,
   label = "ranger"
 )
@@ -266,7 +266,7 @@ df_ice_deepsurv <-
 
 # select reference value for centering
 df_ice_deepsurv_center <-
-  df_ice_deepsurv[df_ice_deepsurv[, "mother_age"] == 15,]
+  df_ice_deepsurv[df_ice_deepsurv[, "mother_age"] == min(df_ice_ranger$mother_age),]
 
 # add reference value for censoring to results dataframe
 df_ice_deepsurv_merge <-
@@ -333,7 +333,7 @@ plot_pdp_ice_deepsurv <- ggplot() +
     linejoin = "round"
   ) +
   geom_rug(
-    data = df_ghana[unique(ice_df_plot$ids), ],
+    data = df_ghana[unique(df_ice_deepsurv$ids), ],
     aes(x = mother_age, y = max(df_ice_deepsurv_merge$yhat)),
     sides = "b",
     alpha = 0.8,
@@ -436,7 +436,7 @@ df_ice_ranger <-
 
 # select reference value for censoring
 df_ice_ranger_center <-
-  df_ice_ranger[df_ice_ranger[, "mother_age"] == 15, ]
+  df_ice_ranger[df_ice_ranger[, "mother_age"] == min(df_ice_ranger$mother_age), ]
 
 # add reference value for censoring to results dataframe
 df_ice_ranger_merge <-
