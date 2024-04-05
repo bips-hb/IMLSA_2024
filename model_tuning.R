@@ -318,7 +318,7 @@ deepsurv_prediction <-
   learner_deepsurv_tuned$predict(task_test_encoded)
 
 # coxph
-coxph_prediction <- coxph_learner$predict(task_test)
+coxph_prediction <- learner_coxph$predict(task_test)
 
 ## scoring rule: integrated Brier score ----------------------------------------
 # ranger
