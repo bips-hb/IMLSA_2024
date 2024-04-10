@@ -250,6 +250,9 @@ ggsave(
 pdp_ice_deepsurv <- model_profile(deepsurv_explainer,
                                   variables = "mother_age")
 
+# specify time variable
+times = 0:59
+
 # extract relevant ice results for plotting
 df_ice_deepsurv <-
   pdp_ice_deepsurv$cp_profiles$result[(pdp_ice_deepsurv$cp_profiles$result$`_vname_` == "mother_age")  &
@@ -259,6 +262,12 @@ df_ice_deepsurv <-
 names(df_ice_deepsurv)[names(df_ice_deepsurv) == "_times_"] = "time"
 names(df_ice_deepsurv)[names(df_ice_deepsurv) == "_yhat_"] = "yhat"
 names(df_ice_deepsurv)[names(df_ice_deepsurv) == "_ids_"] = "ids"
+
+# sample 100 rows
+df_ice_deepsurv$ids <- as.numeric(df_ice_deepsurv$ids)
+set.seed(123)
+sampled_ids <- sample(sort(unique(df_ice_deepsurv$ids)), 100, replace = FALSE)
+df_ice_deepsurv <- df_ice_deepsurv[df_ice_deepsurv$ids %in% sampled_ids, ]
 
 # drop irrelevant columns
 df_ice_deepsurv <-
@@ -333,7 +342,7 @@ plot_pdp_ice_deepsurv <- ggplot() +
     linejoin = "round"
   ) +
   geom_rug(
-    data = df_ghana[unique(df_ice_deepsurv$ids), ],
+    data = df_ghana[sampled_ids, ],
     aes(x = mother_age, y = max(df_ice_deepsurv_merge$yhat)),
     sides = "b",
     alpha = 0.8,
@@ -362,7 +371,7 @@ plot_pdp_ice_deepsurv <- ggplot() +
       colour = "grey34",
       fill = "white",
       linetype = "solid",
-      size = 0.3
+      linewidth = 0.3
     )
   )
 plot_pdp_ice_deepsurv
@@ -380,7 +389,7 @@ plot_ice_deepsurv <- ggplot() +
     alpha = 0.1
   ) +
   geom_rug(
-    data = df_ghana[unique(df_ice_deepsurv_plot$ids), ],
+    data = df_ghana[sampled_ids, ],
     aes(x = mother_age, y = max(df_ice_deepsurv_merge$yhat)),
     sides = "b",
     alpha = 0.8,
@@ -409,7 +418,7 @@ plot_ice_deepsurv <- ggplot() +
       colour = "grey34",
       fill = "white",
       linetype = "solid",
-      size = 0.3
+      linewidth = 0.3
     )
   )
 plot_ice_deepsurv
@@ -429,6 +438,9 @@ df_ice_ranger <-
 names(df_ice_ranger)[names(df_ice_ranger) == "_times_"] = "time"
 names(df_ice_ranger)[names(df_ice_ranger) == "_yhat_"] = "yhat"
 names(df_ice_ranger)[names(df_ice_ranger) == "_ids_"] = "ids"
+
+# sample 100 rows
+df_ice_ranger <- df_ice_ranger[df_ice_ranger$ids %in% sampled_ids, ]
 
 # drop irrelevant columns
 df_ice_ranger <-
@@ -503,7 +515,7 @@ plot_pdp_ice_ranger <- ggplot() +
     linejoin = "round"
   ) +
   geom_rug(
-    data = df_ghana[unique(df_ice_ranger_plot$ids), ],
+    data = df_ghana[sampled_ids, ],
     aes(x = mother_age, y = max(df_ice_ranger_merge$yhat)),
     sides = "b",
     alpha = 0.8,
@@ -530,7 +542,7 @@ plot_pdp_ice_ranger <- ggplot() +
       colour = "grey34",
       fill = "white",
       linetype = "solid",
-      size = 0.3
+      linewidth = 0.3
     )
   )
 plot_pdp_ice_ranger
@@ -548,7 +560,7 @@ plot_ice_ranger <- ggplot() +
     alpha = 0.1
   ) +
   geom_rug(
-    data = df_ghana[unique(df_ice_ranger_plot$ids), ],
+    data = df_ghana[sampled_ids, ],
     aes(x = mother_age, y = max(df_ice_ranger_merge$yhat)),
     sides = "b",
     alpha = 0.8,
@@ -575,7 +587,7 @@ plot_ice_ranger <- ggplot() +
       colour = "grey34",
       fill = "white",
       linetype = "solid",
-      size = 0.3
+      linewidth = 0.3
     )
   )
 plot_ice_ranger
@@ -798,25 +810,25 @@ ranger_explainer2 <- survex::explain(
 
 ## select interesting instances ------------------------------------------------
 # child dead at t = 24
-individual_786 <- df_ghana[786, -c(1, 2, 3)]
+individual_5287 <- df_ghana[5287, -c(1, 2, 3)]
 # child dead at t = 0
-individual_1121 <- df_ghana[1121, -c(1, 2, 3)]
+individual_53 <- df_ghana[53, -c(1, 2, 3)]
 
 ## compute shap values ---------------------------------------------------------
 # compute shap values for individual 786
-survshap_ranger_786 <- predict_parts(
+survshap_ranger_5287 <- predict_parts(
   ranger_explainer2,
-  individual_786,
+  individual_5287,
   type = 'survshap',
   N = 500,
   calculation_method = c("kernelshap"),
   maxvar = 12
 )
 
-# compute shap values for individual 1121
-survshap_ranger_1121 <- predict_parts(
+# compute shap values for individual 53
+survshap_ranger_53 <- predict_parts(
   ranger_explainer2,
-  individual_1121,
+  individual_53,
   type = 'survshap',
   N = 500,
   calculation_method = c("kernelshap"),
@@ -824,12 +836,12 @@ survshap_ranger_1121 <- predict_parts(
 )
 
 ### extract relevant shap results for plotting ---------------------------------
-## extract relevant shap results for plotting for indiviudal 786 ---------------
+## extract relevant shap results for plotting for indiviudal 5287 --------------
 # convert results to list
-dfl_shap_786 <- c(list(survshap_ranger_786))
+dfl_shap_5287 <- c(list(survshap_ranger_5287))
 
 # convert results to dataframe
-df_shap_786 <- lapply(dfl_shap_786, function(x) {
+df_shap_5287 <- lapply(dfl_shap_786, function(x) {
   label <- attr(x, "label")
   cols <- sort(head(order(x$aggregate, decreasing = TRUE), 12))
   sv <- x$result[, cols]
@@ -844,10 +856,10 @@ df_shap_786 <- do.call(rbind, df_shap_786)
 
 ## extract relevant shap results for plotting for indiviudal 786 ---------------
 # convert results to list
-dfl_shap_1121 <- c(list(survshap_ranger_1121))
+dfl_shap_53 <- c(list(survshap_ranger_53))
 
 # convert results to list
-df_shap_1121 <- lapply(dfl_shap_1121, function(x) {
+df_shap_53 <- lapply(dfl_shap_53, function(x) {
   label <- attr(x, "label")
   cols <- sort(head(order(x$aggregate, decreasing = TRUE), 12))
   sv <- x$result[, cols]
@@ -858,7 +870,7 @@ df_shap_1121 <- lapply(dfl_shap_1121, function(x) {
                    stack(transposed, select = -times),
                    label = label)
 })
-df_shap_1121 <- do.call(rbind, df_shap_1121)
+df_shap_53 <- do.call(rbind, df_shap_53)
 
 ## order features --------------------------------------------------------------
 # create preset list of correct feature order
@@ -877,19 +889,19 @@ preset_list_all <- c(
   "dpt1_vaccination"
 )
 
-# reorder the rows based on the preset list for individual 786
-df_shap_786$ind <- factor(df_shap_786$ind, levels = preset_list_all)
-df_shap_786 <- df_shap_786[order(df_shap_1121$ind),]
+# reorder the rows based on the preset list for individual 5287
+df_shap_5287$ind <- factor(df_shap_786$ind, levels = preset_list_all)
+df_shap_5287 <- df_shap_5287[order(df_shap_53$ind),]
 
-# reorder the rows based on the preset list for individual 1121
-df_shap_1121$ind <-
-  factor(df_shap_1121$ind, levels = preset_list_all)
-df_shap_1121 <- df_shap_1121[order(df_shap_1121$ind),]
+# reorder the rows based on the preset list for individual 53
+df_shap_53$ind <-
+  factor(df_shap_53$ind, levels = preset_list_all)
+df_shap_53 <- df_shap_53[order(df_shap_53$ind),]
 
 ## create custom plots of shap values ------------------------------------------
-# create custom plots of shap values for observation 786
-plot_shap_786 <- ggplot() +
-  geom_path(data = df_shap_786,
+# create custom plots of shap values for observation 5287
+plot_shap_5287 <- ggplot() +
+  geom_path(data = df_shap_5287,
             aes(
               x = times,
               y = values,
@@ -938,11 +950,11 @@ plot_shap_786 <- ggplot() +
       size = 0.3
     )
   )
-p_shap_786
+p_shap_5287
 
-# create custom plots of shap values for observation 1121
-plot_shap_1121 <- ggplot() +
-  geom_path(data = df_shap_1121,
+# create custom plots of shap values for observation 53
+plot_shap_53 <- ggplot() +
+  geom_path(data = df_shap_53,
             aes(
               x = times,
               y = values,
@@ -991,14 +1003,14 @@ plot_shap_1121 <- ggplot() +
       size = 0.3
     )
   )
-plot_shap_1121
+plot_shap_53
 
 ## create plot grid and save plots
 # create grid of ale plots
 shap_grid <-
   ggarrange(
-    plot_shap_1121,
-    plot_shap_786,
+    plot_shap_53,
+    plot_shap_5287,
     ncol = 2,
     nrow = 1,
     common.legend = TRUE,
@@ -1263,42 +1275,42 @@ ggsave(
 #------------------------------------------------------------------------------#
 
 ## compute lime values ---------------------------------------------------------
-# compute lime values for individual 786
-survlime_ranger_786 <- predict_parts(ranger_explainer2,
-                                     individual_786,
+# compute lime values for individual 5287
+survlime_ranger_5287 <- predict_parts(ranger_explainer2,
+                                     individual_5287,
                                      type = "survlime")
 
-# compute lime values for individual 1121
-survlime_ranger_1121 <- predict_parts(ranger_explainer2,
-                                      individual_1121,
+# compute lime values for individual 53
+survlime_ranger_53 <- predict_parts(ranger_explainer2,
+                                      individual_53,
                                       type = "survlime")
 
 
 
 ### extract relevant lime results for plotting ---------------------------------
-## extract relevant lime results for plotting for individual 1121 --------------
+## extract relevant lime results for plotting for individual 53 ----------------
 # extract relevant local importance values
-local_importance_1121 <-
-    as.numeric(survlime_ranger_1121$result) * as.numeric(survlime_ranger_1121$variable_values)
+local_importance_53 <-
+    as.numeric(survlime_ranger_53$result) * as.numeric(survlime_ranger_53$variable_values)
 
 # convert relevant local importance values to dataframe
-df_lime_1121 <- data.frame(
-    variable_names = names(survlime_ranger_1121$variable_values),
-    variable_values = as.numeric(survlime_ranger_1121$variable_values),
-    beta = as.numeric(survlime_ranger_1121$result),
+df_lime_53 <- data.frame(
+    variable_names = names(survlime_ranger_53$variable_values),
+    variable_values = as.numeric(survlime_ranger_53$variable_values),
+    beta = as.numeric(survlime_ranger_53$result),
     sign_beta = as.factor(sign(
-        as.numeric(survlime_ranger_1121$result)
+        as.numeric(survlime_ranger_53$result)
     )),
-    sign_local_importance = as.factor(sign(local_importance_1121)),
-    local_importance = local_importance_1121
+    sign_local_importance = as.factor(sign(local_importance_53)),
+    local_importance = local_importance_53
 )
 
 # sort local importance values
-df_lime_1121 <-
-    df_lime_1121[head(order(abs(df_lime_1121$local_importance), decreasing = TRUE), 12),]
+df_lime_53 <-
+    df_lime_53[head(order(abs(df_lime_53$local_importance), decreasing = TRUE), 12),]
 
 # clean feature names
-df_lime_1121$variable_names <-
+df_lime_53$variable_names <-
     c(
         "age_head",
         "mother_age",
@@ -1315,53 +1327,53 @@ df_lime_1121$variable_names <-
     )
 
 # exclude all features with local importance = 0
-df_lime_1121 <- subset(df_lime_1121, local_importance != 0)
+df_lime_53 <- subset(df_lime_53, local_importance != 0)
 
 # exclude all features with local importance = 0
-df_sf_1121 <- data.frame(
+df_sf_53 <- data.frame(
     times = c(
-        survlime_ranger_1121$black_box_sf_times,
-        survlime_ranger_1121$expl_sf_times
+        survlime_ranger_53$black_box_sf_times,
+        survlime_ranger_53$expl_sf_times
     ),
     sfs = c(
-        survlime_ranger_1121$black_box_sf,
-        survlime_ranger_1121$expl_sf
+        survlime_ranger_53$black_box_sf,
+        survlime_ranger_53$expl_sf
     ),
     type = c(
         rep(
             "black box survival function",
-            length(survlime_ranger_1121$black_box_sf)
+            length(survlime_ranger_53$black_box_sf)
         ),
         rep(
             "SurvLIME explanation survival function",
-            length(survlime_ranger_1121$expl_sf)
+            length(survlime_ranger_53$expl_sf)
         )
     )
 )
 
 ## extract relevant lime results for plotting for individual 786 ---------------
 # extract relevant local importance values
-local_importance_786 <-
-    as.numeric(survlime_ranger_786$result) * as.numeric(survlime_ranger_786$variable_values)
+local_importance_5287 <-
+    as.numeric(survlime_ranger_5287$result) * as.numeric(survlime_ranger_5287$variable_values)
 
 # convert relevant local importance values to dataframe
-df_lime_786 <- data.frame(
-    variable_names = names(survlime_ranger_786$variable_values),
-    variable_values = as.numeric(survlime_ranger_786$variable_values),
-    beta = as.numeric(survlime_ranger_786$result),
+df_lime_5287 <- data.frame(
+    variable_names = names(survlime_ranger_5287$variable_values),
+    variable_values = as.numeric(survlime_ranger_5287$variable_values),
+    beta = as.numeric(survlime_ranger_5287$result),
     sign_beta = as.factor(sign(as.numeric(
-        survlime_ranger_786$result
+        survlime_ranger_5287$result
     ))),
     sign_local_importance = as.factor(sign(local_importance_786)),
-    local_importance  = local_importance_786
+    local_importance  = local_importance_5287
 )
 
 # sort local importance values
-df_lime_786 <-
-    df_lime_786[head(order(abs(df_lime_786$local_importance), decreasing = TRUE), 12),]
+df_lime_5287 <-
+    df_lime_5287[head(order(abs(df_lime_5287$local_importance), decreasing = TRUE), 12),]
 
 # clean feature names
-df_lime_786$variable_names <-
+df_lime_5287$variable_names <-
     c(
         "mother_age",
         "age_head",
@@ -1378,35 +1390,35 @@ df_lime_786$variable_names <-
     )
 
 # exclude all features with local importance = 0
-df_lime_786 <- subset(df_lime_786, local_importance != 0)
+df_lime_5287 <- subset(df_lime_5287, local_importance != 0)
 
 # exclude all features with local importance = 0
-df_sf_786 <- data.frame(
+df_sf_5287 <- data.frame(
     times = c(
-        survlime_ranger_786$black_box_sf_times,
-        survlime_ranger_786$expl_sf_times
+        survlime_ranger_5287$black_box_sf_times,
+        survlime_ranger_5287$expl_sf_times
     ),
     sfs = c(
-        survlime_ranger_786$black_box_sf,
-        survlime_ranger_786$expl_sf
+        survlime_ranger_5287$black_box_sf,
+        survlime_ranger_5287$expl_sf
     ),
     type = c(
         rep(
             "black box survival function",
-            length(survlime_ranger_786$black_box_sf)
+            length(survlime_ranger_5287$black_box_sf)
         ),
         rep(
             "SurvLIME explanation survival function",
-            length(survlime_ranger_786$expl_sf)
+            length(survlime_ranger_5287$expl_sf)
         )
     )
 )
 
 
 ## create custom plots of local importance values  -----------------------------
-# create custom plots of local importance values for individual 1121
-plot_local_1121 <-
-    ggplot(data = df_lime_1121,
+# create custom plots of local importance values for individual 53
+plot_local_53 <-
+    ggplot(data = df_lime_53,
            aes(
                x = local_importance,
                y = reorder(variable_names, local_importance, abs),
@@ -1429,11 +1441,11 @@ plot_local_1121 <-
         axis.text = element_text(size = 12),
         axis.title = element_text(size = 14)
     )
-plot_local_1121
+plot_local_53
 
-# create custom plots of local importance values for individual 1121
-plot_sf_1121 <-
-    ggplot(data = df_sf_1121, aes(
+# create custom plots of local importance values for individual 53
+plot_sf_53 <-
+    ggplot(data = df_sf_53, aes(
         x = times,
         y = sfs,
         group = type,
@@ -1468,11 +1480,11 @@ plot_sf_1121 <-
             size = 0.3
         )
     )
-plot_sf_1121
+plot_sf_53
 
 # create custom plots of local importance values for individual 786
-plot_local_786 <-
-    ggplot(data = df_lime_786,
+plot_local_5287 <-
+    ggplot(data = df_lime_5287,
            aes(
                x = local_importance,
                y = reorder(variable_names, local_importance, abs),
@@ -1495,11 +1507,11 @@ plot_local_786 <-
         axis.text = element_text(size = 12),
         axis.title = element_text(size = 14)
     )
-plot_local_786
+plot_local_5287
 
 # create custom plots of local importance values for individual 786
-plot_sf_786 <-
-    ggplot(data = df_sf_786, aes(
+plot_sf_5287 <-
+    ggplot(data = df_sf_5287, aes(
         x = times,
         y = sfs,
         group = type,
@@ -1534,14 +1546,14 @@ plot_sf_786 <-
             size = 0.3
         )
     )
-plot_sf_786
+plot_sf_5287
 
 
 ## create plot grid and save plots ---------------------------------------------
 # create grid of survival function plots
 surv_grid <-
     ggarrange(
-        plot_sf_1121 ,
+        plot_sf_53 ,
         plot_sf_786 ,
         ncol = 2,
         nrow = 1,
@@ -1563,8 +1575,8 @@ ggsave(
 # create grid of local importance plots
 lime_grid <-
     ggarrange(
-        plot_local_1121 ,
-        plot_local_786 ,
+        plot_local_53 ,
+        plot_local_5287 ,
         ncol = 2,
         nrow = 1,
         common.legend = FALSE
