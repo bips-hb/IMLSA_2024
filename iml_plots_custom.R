@@ -717,6 +717,10 @@ names(df_ale_blackboost)[names(df_ale_blackboost) == "_x_"] <-
 names(df_ale_blackboost)[names(df_ale_blackboost) == "_yhat_"] <-
   "prediction"
 
+# remove "vaccination marked on card"
+df_ale_blackboost <- df_ale_blackboost[df_ale_blackboost$value != 
+                                           "vaccination marked on card", ]
+
 # add time column
 df_ale_blackboost$time <- rep(0:59, times = 4)
 
@@ -1316,11 +1320,11 @@ df_lime_53$variable_names <-
         "mother_age",
         "total_dead_daughters",
         "total_children",
-        "place_of_delivery.public/government_facility",
+        "place_delivery.public",
         "place_residence.urban",
         "dpt1_vaccination.no",
         "wealth_idx.richer",
-        "multiples.secondborn_multiples",
+        "multiples.secondborn",
         "total_dead_sons",
         "total_births_5years",
         "sex.male"
@@ -1381,7 +1385,7 @@ df_lime_5287$variable_names <-
         "wealth_idx.poorest",
         "total_births_5years",
         "total_children",
-        "dpt1_vaccination.vaccination_date_on_card",
+        "dpt1_vacc.date_on_card",
         "wealth_idx.poorer",
         "total_dead_sons",
         "total_dead_daughters",
