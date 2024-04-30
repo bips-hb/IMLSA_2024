@@ -7,6 +7,7 @@ library(survminer)
 library(finalfit)
 library(survival)
 library(ggplot2)
+library(ggcorrplot)
 
 # figure path
 fig_path <- here::here("figures_iml")
@@ -21,10 +22,14 @@ fig <- function(x)
 
 
 ## import birth recode data ----------------------------------------------------
-path <- "" # add path
+# path <- "" # add path
+# data_ghbr2014 <-
+#  read_sas(paste(path, "/Ghana_2014/GHBR72SD/GHBR72FL.SAS7BDAT",
+#                 sep = ""))
+
 data_ghbr2014 <-
-  read_sas(paste(path, "/Ghana_2014/GHBR72SD/GHBR72FL.SAS7BDAT",
-                 sep = ""))
+    read_sas(paste("/Users/sophielangbein/Desktop/PhD/Daten/Ghana_2014/GHBR72SD/GHBR72FL.SAS7BDAT",
+                   sep = ""))
 
 
 ## create survival outcome and censoring indicator -----------------------------
@@ -159,7 +164,10 @@ df_ghana$dpt1_vaccination <- factor(
 set.seed(123)
 
 # create an imputation model
-imputation_model <- mice(df_ghana, m = 1, method = "pmm")
+imputation_model <-
+    mice(df_ghana,
+         m = 1,
+         method = "pmm")
 
 # rename original dataset with missing values
 df_ghana_missing <- df_ghana
@@ -179,7 +187,7 @@ summary(df_ghana_missing) # missing: place_of_delivery: 1874 and dpt1_vaccinatio
 
 ## summary of imputed analysis dataframe ---------------------------------------
 summary(df_ghana)
-# dpt1_vaccination: only 11 children "with "vaccination marked on card", only 9 children in "don't know"
+# dpt1_vaccination: only 10 children "with "vaccination marked on card", only 9 children in "don't know"
 # multiples: only 2 thirdborn multiples
 
 
@@ -238,6 +246,24 @@ plot_km
 # convert "alive" variable to back to numeric
 df_ghana$alive <- as.numeric(df_ghana$alive)
 
+## Feature correlation matrix  -------------------------------------------------
+# one hot encode features and plot correlation matrix
+plot_corr <- model.matrix(~ 0 + ., data = df_ghana[,-c(1)]) %>%
+    cor(use = "all.obs") %>%
+    ggcorrplot(
+        show.diag = FALSE,
+        type = "lower",
+        lab = TRUE,
+        ggtheme = theme_bw(),
+        lab_size = 2.5
+    ) +
+    theme(
+        axis.text.x = element_text(size = 10, color = "black"),
+        axis.text.y = element_text(size = 10, color = "black")
+    )
+
+plot_corr
+
 ## save survivaltime distribution plot and Kaplan-Meier curve ------------------
 # save survivaltime distribution plot
 ggsave(
@@ -257,3 +283,11 @@ ggsave(
   device = "pdf"
 )
 
+# save correlation matrix plot
+ggsave(
+    fig("plot_corr.pdf"),
+    plot = plot_corr,
+    width = 10,
+    height = 10,
+    device = "pdf"
+)
