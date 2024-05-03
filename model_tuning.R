@@ -423,7 +423,7 @@ df_brier_scores <- data.frame(models, times, brier_scores)
 # plot Brier scores
 plot_brier <-
   ggplot(df_brier_scores, aes(x = times, y = brier_scores, color = models, )) +
-  geom_line(size = 0.8) +
+  geom_line(linewidth = 0.8) +
   scale_color_manual(values = wes_palette(n = 4, name = "GrandBudapest2")) +
   scale_x_continuous(breaks = seq(0, 60, 10)) +
   ylab("Brier score") +
