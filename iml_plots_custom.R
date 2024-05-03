@@ -4,6 +4,7 @@ library(survex)
 library(ggplot2)
 library(ranger)
 library(ggbeeswarm)
+source("utils.R")
 
 
 
@@ -718,7 +719,7 @@ names(df_ale_blackboost)[names(df_ale_blackboost) == "_yhat_"] <-
   "prediction"
 
 # remove "vaccination marked on card"
-df_ale_blackboost <- df_ale_blackboost[df_ale_blackboost$value != 
+df_ale_blackboost <- df_ale_blackboost[df_ale_blackboost$value !=
                                            "vaccination marked on card", ]
 
 # add time column

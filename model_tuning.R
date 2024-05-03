@@ -6,6 +6,7 @@ library(tensorflow)
 library(keras)
 library(wesanderson)
 library(ggplot2)
+library(survivalmodels)
 
 # figure path
 fig_path <- here::here("figures_iml")
@@ -208,6 +209,7 @@ instance_blackboost <- ti(
 
 
 ## deepsurv --------------------------------------------------------------------
+set_seed(1234)
 at_deepsurv <- AutoTuner$new(
   learner = lrn(
     "surv.deepsurv",
@@ -227,11 +229,13 @@ at_deepsurv <- AutoTuner$new(
 
 ### tune learners and determine optimal hyperparameter configuration -----------
 ## ranger ----------------------------------------------------------------------
+set.seed(7832)
 tuner_ranger <- tnr("random_search")
 tuner_ranger$optimize(instance_ranger)
 
 
 ## blackboost ------------------------------------------------------------------
+set.seed(7832)
 tuner_blackboost <- tnr("random_search")
 tuner_blackboost$optimize(instance_blackboost)
 
@@ -247,11 +251,11 @@ at_deepsurv$tuning_result$x_domain
 # set up learner with hyperparameters
 learner_ranger_tuned <- lrn(
   "surv.ranger",
-  num.trees = 967,
-  mtry = 6,
-  max.depth = 6,
-  min.node.size = 36,
-  sample.fraction = 0.8475985
+  num.trees = 708,
+  mtry = 3,
+  max.depth = 23,
+  min.node.size = 1,
+  sample.fraction = 0.6778257
 )
 
 # train learner
@@ -262,14 +266,14 @@ learner_ranger_tuned$train(task_train)
 # set up learner with hyperparameters
 learner_blackboost_tuned <- lrn(
   "surv.blackboost",
-  maxdepth = 105,
-  minsplit = 73,
-  mstop = 494,
-  nu = 0.03117573,
-  minprob = 0.02815683,
-  maxsurrogate = 1,
-  mtry = 129,
-  minbucket = 49
+  maxdepth = 64,
+  minsplit = 74,
+  mstop = 81,
+  nu = 0.3685141,
+  minprob = 0.008189857,
+  maxsurrogate = 6,
+  mtry = 12,
+  minbucket = 29
 )
 
 # train learner
@@ -284,10 +288,10 @@ learner_deepsurv_tuned <- lrn(
   early_stopping = TRUE,
   epochs = 10,
   optimizer = "adam",
-  dropout = 0.5421473,
-  weight_decay = 0.1676119,
-  learning_rate = 0.9079044,
-  num_nodes = c(154, 154, 154)
+  dropout = 0.1655618,
+  weight_decay = 0.4931967,
+  learning_rate = 0.3540075,
+  num_nodes = c(147)
 )
 
 # train learner
@@ -297,10 +301,10 @@ learner_deepsurv_tuned$train(task_train_encoded)
 
 ## coxph -----------------------------------------------------------------------
 # set up learner with hyperparameters
-coxph_learner <- lrn("surv.coxph")
+learner_coxph <- lrn("surv.coxph")
 
 # train learner
-coxph_learner$train(task_train_cox)
+learner_coxph$train(task_train_cox)
 
 #------------------------------------------------------------------------------#
 ####                        Model Performance                               ####
