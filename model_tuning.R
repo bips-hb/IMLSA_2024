@@ -363,6 +363,23 @@ deepsurv_prediction$score(msr("surv.dcalib"))
 # coxph
 coxph_prediction$score(msr("surv.dcalib"))
 
+## model performance table -----------------------------------------------------
+perf_table <- data.frame(
+    Model = c("coxph", "ranger", "blackboost", "deepsurv"),
+    Brier_Score = c(coxph_prediction$score(msr("surv.graf")),
+                    ranger_prediction$score(msr("surv.graf")),
+                    blackboost_prediction$score(msr("surv.graf")),
+                    deepsurv_prediction$score(msr("surv.graf"))),
+    D_Calibration = c(coxph_prediction$score(msr("surv.dcalib")),
+                      ranger_prediction$score(msr("surv.dcalib")),
+                      blackboost_prediction$score(msr("surv.dcalib")),
+                      deepsurv_prediction$score(msr("surv.dcalib"))),
+    C_Index = c(coxph_prediction$score(msr("surv.cindex")),
+                ranger_prediction$score(msr("surv.cindex")),
+                blackboost_prediction$score(msr("surv.cindex")),
+                deepsurv_prediction$score(msr("surv.cindex"))
+    ))
+perf_table # Figure 5(a)
 
 ## compute Brier scores for separate time points -------------------------------
 # ranger
@@ -442,7 +459,7 @@ plot_brier <-
       linewidth = 0.3
     )
   )
-plot_brier
+plot_brier # Figure 5(b)
 
 # save plot
 ggsave(
