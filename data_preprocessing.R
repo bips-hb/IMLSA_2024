@@ -182,7 +182,8 @@ df_ghana <- complete(imputation_model)
 
 
 ## summary of analysis dataframe with missing values ---------------------------
-summary(df_ghana_missing) # missing: place_of_delivery: 1874 and dpt1_vaccination 1916
+summary(df_ghana_missing)
+# missing: place_of_delivery: 1874 and dpt1_vaccination 1916
 
 
 ## summary of imputed analysis dataframe ---------------------------------------
@@ -206,7 +207,7 @@ plot_dist <-
                  fill = "#FF99CC") +
   facet_grid(. ~ alive) +
   theme_bw()
-plot_dist
+plot_dist  # Figure 4(a)
 # survivaltimes of living children are approximately uniformly distributed in the sample (125-250 children at each age in months)
 # survivaltime distribution of dead children is very uneven, a majority of children dies <10 months, with a large majority at birth (>750),
 # for ages >20 at many times there are no events, while at some time points there is a large number of events
@@ -239,8 +240,7 @@ plot_km <- ggsurvplot(
   font.tickslab = c(12),
   legend = "none"
 )
-plot_km
-# clear pattern of stepwise decrease in survival probability at times that events occur
+plot_km # Figure 4(b)
 
 
 # convert "alive" variable to back to numeric
@@ -262,7 +262,7 @@ plot_corr <- model.matrix(~ 0 + ., data = df_ghana[,-c(1)]) %>%
         axis.text.y = element_text(size = 10, color = "black")
     )
 
-plot_corr
+plot_corr # Figure 13
 
 ## save survivaltime distribution plot and Kaplan-Meier curve ------------------
 # save survivaltime distribution plot
