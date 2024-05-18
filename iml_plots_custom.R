@@ -6,8 +6,6 @@ library(ranger)
 library(ggbeeswarm)
 source("utils.R")
 
-
-
 # figure path
 fig_path <- here::here("figures_iml")
 if (!file.exists(fig_path))
@@ -100,7 +98,7 @@ df_pfi_coxph <- subset(df_pfi_coxph, time != 60)
 # create custom plot of permutation feature importance over time
 plot_pfi_coxph <-
   ggplot(df_pfi_coxph, aes(x = time, y = values, color = features)) +
-  geom_line(size = 0.8) +
+  geom_line(linewidth = 0.8) +
   scale_color_manual(
     values = c(
       "#ffff99",
@@ -122,7 +120,7 @@ plot_pfi_coxph <-
   scale_x_continuous(breaks = c(seq(0, 50, 10), 59)) +
   ylab(expression(
     paste(
-      "Brier score loss after permutations\nwith loss of full model subtracted"
+      "permutation feature importance"
     )
   )) +
   theme(
@@ -137,7 +135,7 @@ plot_pfi_coxph <-
       colour = "grey34",
       fill = "white",
       linetype = "solid",
-      size = 0.3
+      linewidth = 0.3
     )
   )
 plot_pfi_coxph
@@ -173,7 +171,7 @@ df_pfi_blackboost <- subset(df_pfi_blackboost, time != 60)
 # create custom plot of permutation feature importance over time
 plot_pfi_blackboost <-
   ggplot(df_pfi_blackboost, aes(x = time, y = values, color = features)) +
-  geom_line(size = 0.8) +
+  geom_line(linewidth = 0.8) +
   scale_color_manual(
     values = c(
       "#ffff99",
@@ -195,7 +193,7 @@ plot_pfi_blackboost <-
   scale_x_continuous(breaks = c(seq(0, 50, 10), 59)) +
   ylab(expression(
     paste(
-      "Brier score loss after permutations\nwith loss of full model subtracted"
+      "permutation feature importance"
     )
   )) +
   theme(
@@ -210,7 +208,7 @@ plot_pfi_blackboost <-
       colour = "grey34",
       fill = "white",
       linetype = "solid",
-      size = 0.3
+      linewidth = 0.3
     )
   )
 plot_pfi_blackboost
@@ -228,7 +226,7 @@ pfi_grid <-
     legend = "bottom"
   ) +
   theme(plot.margin = margin(0.1, 0.1, 0.4, 0.1, "cm"))
-pfi_grid
+pfi_grid # Figure 6
 
 # save grid of plots
 ggsave(
@@ -249,7 +247,8 @@ ggsave(
 ## deepsurv --------------------------------------------------------------------
 # compute partial dependence and individual conditional expectation values
 pdp_ice_deepsurv <- model_profile(deepsurv_explainer,
-                                  variables = "mother_age")
+                                  variables = "mother_age",
+                                  N = NULL)
 
 # specify time variable
 times = 0:59
@@ -276,7 +275,7 @@ df_ice_deepsurv <-
 
 # select reference value for centering
 df_ice_deepsurv_center <-
-  df_ice_deepsurv[df_ice_deepsurv[, "mother_age"] == min(df_ice_ranger$mother_age),]
+  df_ice_deepsurv[df_ice_deepsurv[, "mother_age"] == min(df_ice_deepsurv$mother_age),]
 
 # add reference value for censoring to results dataframe
 df_ice_deepsurv_merge <-
@@ -356,8 +355,8 @@ plot_pdp_ice_deepsurv <- ggplot() +
   ggtitle("", subtitle = "deepsurv") +
   theme_bw() +
   scale_x_continuous(breaks = seq(15, 50, 5)) +
-  scale_y_continuous(limits = c(-0.9, 0.25),
-                     breaks = seq(-0.9, 0.25, by = 0.2)) +
+  scale_y_continuous(limits = c(-0.8, 0.1),
+                     breaks = seq(-0.8, 0.1, by = 0.2)) +
   ylab("prediction") +
   theme(
     legend.position = "bottom",
@@ -403,8 +402,8 @@ plot_ice_deepsurv <- ggplot() +
   ggtitle("", subtitle = "deepsurv") +
   theme_bw() +
   scale_x_continuous(breaks = seq(15, 50, 5)) +
-  scale_y_continuous(limits = c(-0.9, 0.25),
-                     breaks = seq(-0.9, 0.25, by = 0.2)) +
+  scale_y_continuous(limits = c(-0.8, 0.1),
+                     breaks = seq(-0.8, 0.1, by = 0.2)) +
   ylab("prediction") +
   theme(
     legend.position = "bottom",
@@ -428,12 +427,14 @@ plot_ice_deepsurv
 ## ranger ----------------------------------------------------------------------
 # compute partial dependence and individual conditional expectation values
 pdp_ice_ranger <- model_profile(ranger_explainer,
-                                variables = "mother_age")
+                                variables = "mother_age",
+                                N = NULL)
 
 # extract relevant ice results for plotting
 df_ice_ranger <-
-  pdp_ice_ranger$cp_profiles$result[(pdp_ice_ranger$cp_profiles$result$`_vname_` == "mother_age")  &
-                                      (pdp_ice_ranger$cp_profiles$result$`_times_` %in% times),]
+    pdp_ice_ranger$cp_profiles$result[(pdp_ice_ranger$cp_profiles$result$`_vname_` == "mother_age")  &
+                                          (pdp_ice_ranger$cp_profiles$result$`_times_` %in% times),]
+
 
 # rename columns
 names(df_ice_ranger)[names(df_ice_ranger) == "_times_"] = "time"
@@ -474,7 +475,7 @@ df_ice_ranger_plot <-
 
 # aggregate centered ice values to obtain centered pdp values
 df_pdp_ranger_center <- aggregate(yhat ~ time + mother_age,
-                           data = ice_df_merge[, c("ids", "mother_age", "yhat", "time")],
+                           data = df_ice_ranger_merge[, c("ids", "mother_age", "yhat", "time")],
                            FUN = mean)
 
 # extract pdp values for times that should be plotted
@@ -527,8 +528,8 @@ plot_pdp_ice_ranger <- ggplot() +
   ggtitle("", subtitle = "ranger") +
   theme_bw() +
   scale_x_continuous(breaks = seq(15, 50, 5)) +
-  scale_y_continuous(limits = c(-0.25, 0.05),
-                     breaks = seq(-0.25, 0.05, by = 0.05)) +
+  scale_y_continuous(limits = c(-0.2, 0.25),
+                     breaks = seq(-0.2, 0.25, by = 0.1)) +
   ylab("prediction") +
   theme(
     legend.position = "bottom",
@@ -572,8 +573,8 @@ plot_ice_ranger <- ggplot() +
   ggtitle("", subtitle = "ranger") +
   theme_bw() +
   scale_x_continuous(breaks = seq(15, 50, 5)) +
-  scale_y_continuous(limits = c(-0.25, 0.05),
-                     breaks = seq(-0.25, 0.05, by = 0.05)) +
+  scale_y_continuous(limits = c(-0.25, 0.25),
+                     breaks = seq(-0.25, 0.25, by = 0.1)) +
   ylab("prediction") +
   theme(
     legend.position = "bottom",
@@ -627,7 +628,7 @@ ice_grid <-
     legend = "bottom"
   ) +
   theme(plot.margin = margin(0.1, 0.1, 0.4, 0.1, "cm"))
-ice_grid
+ice_grid # Figure 14
 
 # create grid of ice and pdp plots
 ggsave(
@@ -657,6 +658,10 @@ df_ale_coxph <-
 # rename columns
 names(df_ale_coxph)[names(df_ale_coxph) == "_x_"] <- "value"
 names(df_ale_coxph)[names(df_ale_coxph) == "_yhat_"] <- "prediction"
+
+# remove "vaccination marked on card"
+df_ale_coxph <- df_ale_coxph[df_ale_coxph$value !=
+                                 "vaccination marked on card",]
 
 # add time column
 df_ale_coxph$time <- rep(0:59, times = 4)
@@ -778,7 +783,7 @@ ale_grid <-
     legend = "bottom"
   ) +
   theme(plot.margin = margin(0.1, 0.1, 0.4, 0.1, "cm"))
-ale_grid
+ale_grid # Figure 9
 
 # save grid of ale plots
 ggsave(
@@ -798,11 +803,11 @@ ggsave(
 ranger_rsf <- ranger(
   Surv(survivaltime, status) ~ .,
   data = df_ghana[train_indices, -c(3)],
-  num.trees = 967,
-  mtry = 6,
-  max.depth = 6,
-  min.node.size = 36,
-  sample.fraction = 0.8475985
+  num.trees = 708,
+  mtry = 3,
+  max.depth = 23,
+  min.node.size = 1,
+  sample.fraction = 0.6778257
 )
 
 # set up new explainer using ranger model from ranger package
@@ -814,10 +819,64 @@ ranger_explainer2 <- survex::explain(
 )
 
 ## select interesting instances ------------------------------------------------
-# child dead at t = 24
+# child dead at t = 23
 individual_5287 <- df_ghana[5287, -c(1, 2, 3)]
 # child dead at t = 0
 individual_53 <- df_ghana[53, -c(1, 2, 3)]
+
+## SurvLIME and SurvSHAP individuals table -------------------------------------
+individuals_table <- data.frame(
+    Individual = c(
+        "time",
+        "status",
+        "age_head",
+        "dpt1_vaccination",
+        "mother_age",
+        "multiples",
+        "place_of_delivery",
+        "place_of_residence",
+        "sex",
+        "total_births_5years",
+        "total_children",
+        "total_dead_daughters",
+        "total_dead_sons",
+        "wealth_idx"
+    ),
+    C1 = c(
+        df_ghana[53, 2],
+        df_ghana[53, 1],
+        individual_53[[5]],
+        individual_53[[12]],
+        individual_53[[4]],
+        individual_53[[8]],
+        individual_53[[11]],
+        individual_53[[2]],
+        individual_53[[1]],
+        individual_53[[9]],
+        individual_53[[10]],
+        individual_53[[6]],
+        individual_53[[7]],
+        individual_53[[3]]
+    ),
+    C2 = c(
+        df_ghana[5287, 2],
+        df_ghana[5287, 1],
+        individual_5287[[5]],
+        individual_5287[[12]],
+        individual_5287[[4]],
+        individual_5287[[8]],
+        individual_5287[[11]],
+        individual_5287[[2]],
+        individual_5287[[1]],
+        individual_5287[[9]],
+        individual_5287[[10]],
+        individual_5287[[6]],
+        individual_5287[[7]],
+        individual_5287[[3]]
+    )
+)
+individuals_table # Table 2
+
 
 ## compute shap values ---------------------------------------------------------
 # compute shap values for individual 786
@@ -841,12 +900,12 @@ survshap_ranger_53 <- predict_parts(
 )
 
 ### extract relevant shap results for plotting ---------------------------------
-## extract relevant shap results for plotting for indiviudal 5287 --------------
+## extract relevant shap results for plotting for individual 5287 --------------
 # convert results to list
 dfl_shap_5287 <- c(list(survshap_ranger_5287))
 
 # convert results to dataframe
-df_shap_5287 <- lapply(dfl_shap_786, function(x) {
+df_shap_5287 <- lapply(dfl_shap_5287, function(x) {
   label <- attr(x, "label")
   cols <- sort(head(order(x$aggregate, decreasing = TRUE), 12))
   sv <- x$result[, cols]
@@ -857,7 +916,7 @@ df_shap_5287 <- lapply(dfl_shap_786, function(x) {
                    stack(transposed, select = -times),
                    label = label)
 })
-df_shap_786 <- do.call(rbind, df_shap_786)
+df_shap_5287 <- do.call(rbind, df_shap_5287)
 
 ## extract relevant shap results for plotting for indiviudal 786 ---------------
 # convert results to list
@@ -895,7 +954,7 @@ preset_list_all <- c(
 )
 
 # reorder the rows based on the preset list for individual 5287
-df_shap_5287$ind <- factor(df_shap_786$ind, levels = preset_list_all)
+df_shap_5287$ind <- factor(df_shap_5287$ind, levels = preset_list_all)
 df_shap_5287 <- df_shap_5287[order(df_shap_53$ind),]
 
 # reorder the rows based on the preset list for individual 53
@@ -955,7 +1014,7 @@ plot_shap_5287 <- ggplot() +
       size = 0.3
     )
   )
-p_shap_5287
+plot_shap_5287
 
 # create custom plots of shap values for observation 53
 plot_shap_53 <- ggplot() +
@@ -1022,7 +1081,7 @@ shap_grid <-
     legend = "bottom"
   ) +
   theme(plot.margin = margin(0.1, 0.1, 0.4, 0.1, "cm"))
-shap_grid
+shap_grid # Figure 11
 
 # save grid of shap plots
 ggsave(
@@ -1134,7 +1193,7 @@ df_beeswarm <- df_beeswarm[, preset_list_all]
 df_beeswarm_stacked <- stack(df_beeswarm)
 
 # extract feature values for observations for which shap values were computed
-original_values <- as.data.frame(beeswarm_results$variable_values)[, cols]
+original_values <- as.data.frame(beeswarm_results$variable_values)
 original_values <- original_values[, preset_list_all]
 
 # convert factor categories to characters
@@ -1175,7 +1234,7 @@ df_beeswarm_dpt1 <-
 ## create custom beeswarm plot for numerical features  -------------------------
 plot_beeswarm_total <-
     ggplot(data = df_beeswarm_total, aes(x = shap_value, y = feature, color = value)) +
-    geom_quasirandom() +
+    geom_quasirandom(orientation = 'y') +
     theme_bw() +
     ggtitle("", subtitle = "ranger") +
     xlab("Aggregated SurvSHAP(t) value") +
@@ -1218,7 +1277,7 @@ plot_beeswarm_dpt1 <-
         "#e4c1f9",
         "#baffc9"
     )) +
-    geom_quasirandom() +
+    geom_quasirandom(orientation = 'y') +
     theme_bw() +
     ggtitle("", subtitle = "ranger") +
     xlab("Aggregated SurvSHAP(t) value") +
@@ -1264,7 +1323,7 @@ shap_agg_grid <-
         common.legend = FALSE
     ) +
     theme(plot.margin = margin(0.1, 0.1, 0.4, 0.1, "cm"))
-shap_agg_grid
+shap_agg_grid # Figure 12
 
 # save grid of shap plots
 ggsave(
@@ -1369,7 +1428,7 @@ df_lime_5287 <- data.frame(
     sign_beta = as.factor(sign(as.numeric(
         survlime_ranger_5287$result
     ))),
-    sign_local_importance = as.factor(sign(local_importance_786)),
+    sign_local_importance = as.factor(sign(local_importance_5287)),
     local_importance  = local_importance_5287
 )
 
@@ -1501,7 +1560,7 @@ plot_local_5287 <-
         "0" = "#ffffff",
         "1" = "#21918c"
     )) +
-    ggtitle("C1: Child dead at t=0", subtitle = "ranger") +
+    ggtitle("C2: Child censored at t=23", subtitle = "ranger") +
     theme_bw() +
     ylab("") +
     xlab("SurvLIME local importance") +
@@ -1527,7 +1586,7 @@ plot_sf_5287 <-
     scale_x_continuous(breaks = c(0, 10, 20, 30, 40, 50, 60)) +
     scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.2)) +
     labs(x = "time", y = "survival function value") +
-    ggtitle("C1: Child dead at t=0", subtitle = "ranger") +
+    ggtitle("C2: Child censored at t=23", subtitle = "ranger") +
     scale_color_manual(
         "",
         values = c(
@@ -1559,14 +1618,14 @@ plot_sf_5287
 surv_grid <-
     ggarrange(
         plot_sf_53 ,
-        plot_sf_786 ,
+        plot_sf_5287 ,
         ncol = 2,
         nrow = 1,
         common.legend = TRUE,
         legend = "bottom"
     ) +
     theme(plot.margin = margin(0.1, 0.1, 0.4, 0.1, "cm"))
-surv_grid
+surv_grid # Figure 15
 
 # save grid of survival function plots
 ggsave(
@@ -1587,7 +1646,7 @@ lime_grid <-
         common.legend = FALSE
     ) +
     theme(plot.margin = margin(0.1, 0.1, 0.4, 0.1, "cm"))
-lime_grid
+lime_grid # Figure 10
 
 # save grid of local importance plots
 ggsave(
