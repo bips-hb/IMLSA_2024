@@ -22,14 +22,10 @@ fig <- function(x)
 
 
 ## import birth recode data ----------------------------------------------------
-# path <- "" # add path
-# data_ghbr2014 <-
-#  read_sas(paste(path, "/Ghana_2014/GHBR72SD/GHBR72FL.SAS7BDAT",
-#                 sep = ""))
-
-data_ghbr2014 <-
-    read_sas(paste("/Users/sophielangbein/Desktop/PhD/Daten/Ghana_2014/GHBR72SD/GHBR72FL.SAS7BDAT",
-                   sep = ""))
+ path <- "" # add path
+ data_ghbr2014 <-
+  read_sas(paste(path, "/Ghana_2014/GHBR72SD/GHBR72FL.SAS7BDAT",
+                 sep = ""))
 
 
 ## create survival outcome and censoring indicator -----------------------------
