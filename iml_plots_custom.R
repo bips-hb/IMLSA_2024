@@ -706,7 +706,7 @@ plot_ale_coxph <- ggplot() +
   )
 plot_ale_coxph
 
-## blackboost
+## blackboost ------------------------------------------------------------------
 # compute accumulated local effects values
 ale_blackboost <- model_profile(blackboost_explainer,
                                 variables = "dpt1_vaccination",
@@ -792,6 +792,181 @@ ggsave(
   width = 14,
   height = 6,
   device = "pdf"
+)
+
+#------------------------------------------------------------------------------#
+####               Feature Interaction Friedman's H-statistics              ####
+#------------------------------------------------------------------------------#
+
+## ranger ----------------------------------------------------------------------
+# compute feature interaction values
+df_Hjk_mother_age <-
+    feature_interaction(explainer = ranger_explainer,
+                        feature = "mother_age",
+                        N = NULL)
+
+# remove values at t=60 for plotting
+df_Hjk_mother_age <- subset(df_Hjk_mother_age, time != c(60))
+
+# replace instable values >1 with 1
+df_Hjk_mother_age$H[df_Hjk_mother_age$H > 1] <- 1
+
+# create preset list of correct feature order
+preset_list_all <- c(
+    "sex",
+    "place_residence",
+    "wealth_idx",
+    "mother_age",
+    "age_head",
+    "total_dead_sons",
+    "total_dead_daughters",
+    "multiples",
+    "total_births_5years",
+    "total_children",
+    "place_of_delivery",
+    "dpt1_vaccination"
+)
+
+# reorder the rows based on the preset list
+df_Hjk_mother_age$feature <-
+    factor(df_Hjk_mother_age$feature, levels = preset_list_all)
+df_Hjk_mother_age <-
+    df_Hjk_mother_age[order(df_Hjk_mother_age$feature), ]
+
+# create custom plot of H-statistic curves over time
+plot_hjk_mother_age <-
+    ggplot(data = df_Hjk_mother_age, aes(
+        x = time,
+        y = H,
+        color = feature,
+        group = feature
+    )) +
+    geom_line(linewidth = 0.8) +
+    scale_color_manual(
+        values = c(
+            "#ffff99",
+            "#b15928",
+            "#a6cee3",
+            "#1f78b4",
+            "#fb9a99",
+            "#e31a1c",
+            "#fdbf6f",
+            "#ff7f00",
+            "#b2df8a",
+            "#33a02c",
+            "#cab2d6",
+            "#6a3d9a"
+        )
+    ) +
+    ggtitle("mother_age", subtitle = "ranger") +
+    theme_bw() +
+    scale_x_continuous(breaks = c(seq(0, 50, 10), 59)) +
+    ylab(expression(paste("H-statistic value"))) +
+    theme(
+        legend.position = "bottom",
+        plot.subtitle = element_text(size = 14),
+        plot.margin = margin(0.7, 0.7, 0.7, 0.7, "cm"),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size = 14),
+        legend.title = element_text(size = 14, face = "bold"),
+        legend.text = element_text(size = 12),
+        legend.background = element_rect(
+            colour = "grey34",
+            fill = "white",
+            linetype = "solid",
+            linewidth = 0.3
+        )
+    )
+plot_hjk_mother_age
+
+
+## blackboost ------------------------------------------------------------------
+# compute feature interaction values
+df_Hjk_dpt1 <-
+    feature_interaction(explainer = blackboost_explainer,
+                        feature = "dpt1_vaccination",
+                        N = NULL)
+
+# remove values at t=60 for plotting
+df_Hjk_dpt1 <- subset(df_Hjk_dpt1, time != c(60))
+
+# replace instable values >1 with 1
+df_Hjk_dpt1$H[df_Hjk_dpt1$H > 1] <- 1
+
+# reorder the rows based on the preset list
+df_Hjk_dpt1$feature <-
+    factor(df_Hjk_dpt1$feature, levels = preset_list_all)
+df_Hjk_dpt1 <- df_Hjk_dpt1[order(df_Hjk_dpt1$feature), ]
+
+# create custom plot of H-statistic curves over time
+plot_hjk_dpt1 <-
+    ggplot(data = df_Hjk_dpt1, aes(
+        x = time,
+        y = H,
+        color = feature,
+        group = feature
+    )) +
+    geom_line(linewidth = 0.8) +
+    scale_color_manual(
+        values = c(
+            "#ffff99",
+            "#b15928",
+            "#a6cee3",
+            "#1f78b4",
+            "#fb9a99",
+            "#e31a1c",
+            "#fdbf6f",
+            "#ff7f00",
+            "#b2df8a",
+            "#33a02c",
+            "#cab2d6",
+            "#6a3d9a"
+        )
+    ) +
+    ggtitle("dpt1_vaccination", subtitle = "blackboost") +
+    theme_bw() +
+    scale_x_continuous(breaks = c(seq(0, 50, 10), 59)) +
+    ylab(expression(paste("H-statistic value"))) +
+    theme(
+        legend.position = "bottom",
+        plot.subtitle = element_text(size = 14),
+        plot.margin = margin(0.7, 0.7, 0.7, 0.7, "cm"),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size = 14),
+        legend.key.size = unit(1.5, "lines"),
+        legend.title = element_text(size = 14, face = "bold"),
+        legend.text = element_text(size = 12),
+        legend.background = element_rect(
+            colour = "grey34",
+            fill = "white",
+            linetype = "solid",
+            size = 0.3
+        )
+    )
+plot_hjk_dpt1
+
+
+## create plot grid and save plots ---------------------------------------------
+# create grid of h-statistic plots
+h_grid <-
+    ggarrange(
+        plot_hjk_mother_age,
+        plot_hjk_dpt1,
+        ncol = 2,
+        nrow = 1,
+        common.legend = TRUE,
+        legend = "bottom"
+    ) +
+    theme(plot.margin = margin(0.1, 0.1, 0.4, 0.1, "cm"))
+h_grid # Figure 8
+
+# save grid of h-statistic plots
+ggsave(
+    fig("h_grid.pdf"),
+    plot = h_grid,
+    width = 14,
+    height = 6,
+    device = "pdf"
 )
 
 #------------------------------------------------------------------------------#
@@ -937,22 +1112,6 @@ df_shap_53 <- lapply(dfl_shap_53, function(x) {
 df_shap_53 <- do.call(rbind, df_shap_53)
 
 ## order features --------------------------------------------------------------
-# create preset list of correct feature order
-preset_list_all <- c(
-  "sex",
-  "place_residence",
-  "wealth_idx",
-  "mother_age",
-  "age_head",
-  "total_dead_sons",
-  "total_dead_daughters",
-  "multiples",
-  "total_births_5years",
-  "total_children",
-  "place_of_delivery",
-  "dpt1_vaccination"
-)
-
 # reorder the rows based on the preset list for individual 5287
 df_shap_5287$ind <- factor(df_shap_5287$ind, levels = preset_list_all)
 df_shap_5287 <- df_shap_5287[order(df_shap_53$ind),]
