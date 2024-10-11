@@ -1,6 +1,9 @@
 ## helper functions
-# this code is taken from the R survex package
 
+
+
+## Shap aggregation ------------------------------------------------------------
+# # this code is taken from the R survex package
 aggregate_shap_multiple_observations <-
     function(shap_res_list,
              feature_names,
@@ -19,7 +22,7 @@ aggregate_shap_multiple_observations <-
 
             tmp_res <-
                 aggregate(
-                    full_survshap_results[,!colnames(full_survshap_results) %in% c("rn")],
+                    full_survshap_results[, !colnames(full_survshap_results) %in% c("rn")],
                     by = list(full_survshap_results$rn),
                     FUN = aggregation_function
                 )
@@ -28,7 +31,7 @@ aggregate_shap_multiple_observations <-
                 order(as.numeric(substring(rownames(tmp_res), 3)))
 
             tmp_res <-
-                tmp_res[ordering,!colnames(tmp_res) %in% c("rn", "Group.1")]
+                tmp_res[ordering, !colnames(tmp_res) %in% c("rn", "Group.1")]
         } else {
             # no aggregation required
             tmp_res <- shap_res_list[[1]]
@@ -39,12 +42,11 @@ aggregate_shap_multiple_observations <-
         return(shap_values)
     }
 
-## feature interaction
-# function to compute Friedmans H_jk statistic
 
-feature_interaction <- function(explainer,
-                                feature,
-                                N) {
+
+## Feature interaction ---------------------------------------------------------
+# function to compute Friedman's H_jk statistic
+feature_interaction <- function(explainer, feature, N = NULL) {
     # create list of features
     feature_list <- colnames(explainer$data)
     # remove feature of interest
@@ -58,7 +60,8 @@ feature_interaction <- function(explainer,
     # compute pd of all features
     pdp_results <- model_profile(explainer,
                                  variables = feature_list,
-                                 N = N)
+                                 center = TRUE,
+                                 N = NULL)
     # extract results
     df_results <- pdp_results$result
     # rename columns
@@ -72,7 +75,7 @@ feature_interaction <- function(explainer,
     # create separate dataframes for feature of interest and other features
     feature_of_interest = feature
     df_pdp_f <- subset(df_results, feature == feature_of_interest)
-    df_pdp_nf <- df_results[!(df_results$feature == feature),]
+    df_pdp_nf <- df_results[!(df_results$feature == feature), ]
     # rename columns
     names(df_pdp_f)[names(df_pdp_f) == "yhat_nf"] <- "yhat_f"
     names(df_pdp_f)[names(df_pdp_f) == "feature"] <-
@@ -82,9 +85,11 @@ feature_interaction <- function(explainer,
     names(df_pdp_nf)[names(df_pdp_nf) == "feature_value"] <-
         "feature_value_v2"
     # compute 2d pd for feature tuples
-    pdp_2d_results <- model_profile_2d(explainer,
-                                       variables = tuples_list,
-                                       N = N)
+    ndata = explainer$data
+    pdp_2d_results <- survex::model_profile_2d(explainer,
+                                               variables = tuples_list,
+                                               N = NULL,
+                                               center = TRUE)
     # extract results
     df_results_2d <- pdp_2d_results$result
     # rename columns
@@ -127,8 +132,7 @@ feature_interaction <- function(explainer,
     # compute Hjk statistics
     df_Hjk <-
         dt_merge[, .(H = sum((yhat_2d - yhat_f - yhat_nf) ^ 2) / sum(yhat_2d ^
-                                                                         2)),
-                 by = .(feature, time)]
+                                                                         2)), by = .(feature, time)]
     # return results
     return(df_Hjk)
 }
