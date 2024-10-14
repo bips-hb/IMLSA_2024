@@ -149,11 +149,11 @@ plot_brier <-
             linewidth = 0.3
         )
     )
-plot_brier # Figure
+plot_brier # Figure 8 b)
 
 # save custom plot
 ggsave(
-    fig("plot_brier_gbsg2.pdf"),
+    fig("figure_8b.pdf"),
     plot = plot_brier,
     width = 7,
     height = 6,
@@ -167,16 +167,16 @@ mp_cph <- model_performance(coxph_explainer)
 mp_rsf <- model_performance(ranger_explainer)
 
 # C-index
-mp_cph$result$`C-index` # Text
-mp_rsf$result$`C-index`# Text
+mp_cph$result$`C-index` # Text p.28
+mp_rsf$result$`C-index`# Text p.28
 
 # Integrated Brier Score
-mp_cph$result$`Integrated Brier score` # Text
-mp_rsf$result$`Integrated Brier score` # Text
+mp_cph$result$`Integrated Brier score` # Text p.28
+mp_rsf$result$`Integrated Brier score` # Text p.28
 
 # Integrated C/D AUC
-mp_cph$result$`Integrated C/D AUC` # Text
-mp_rsf$result$`Integrated C/D AUC` # Text
+mp_cph$result$`Integrated C/D AUC` # Text p.28
+mp_rsf$result$`Integrated C/D AUC` # Text p.28
 
 
 ## Kaplan-Meier survival curves ------------------------------------------------
@@ -201,7 +201,7 @@ plot_km <- ggsurvplot(
     font.tickslab = c(18),
     legend = "none"
 )
-plot_km # Figure
+plot_km # Figure 8 a)
 
 # save Kaplan-Meier curve
 ggsave_workaround <- function(g) {
@@ -216,7 +216,7 @@ ggsave_workaround <- function(g) {
 plot_km_save <- ggsave_workaround(plot_km)
 
 ggsave(
-    fig("plot_km_gbsg2.pdf"),
+    fig("figure_8a.pdf"),
     plot = plot_km_save,
     width = 7,
     height = 6,
@@ -254,7 +254,7 @@ names(df_pfi_coxph)[names(df_pfi_coxph) == "ind"] <- "features"
 df_pfi_coxph <- subset(df_pfi_coxph, features != "_full_model_")
 
 # create custom plot of permutation feature importance over time
-plot_pfi_coxph <- plot_fi(
+plot_pfi_coxph <- plot_pfi(
     df_pfi_coxph,
     color_values = c(
         "#000000",
@@ -317,7 +317,7 @@ plot_pfi_ranger
 
 
 ## Create plot grid and save plots ---------------------------------------------
-# create grid of plots
+# create grid of pfi plots
 pfi_grid <-
     ggarrange(
         plot_pfi_coxph,
@@ -328,11 +328,11 @@ pfi_grid <-
         legend = "bottom"
     ) +
     theme(plot.margin = margin(0.1, 0.1, 0.4, 0.1, "cm"))
-pfi_grid # Figure
+pfi_grid # Figure 9
 
-# save grid of plots
+# save grid of pfi plots
 ggsave(
-    fig("pfi_grid_gbsg2.pdf"),
+    fig("figure_9.pdf"),
     plot = pfi_grid,
     width = 14,
     height = 6,
@@ -489,11 +489,11 @@ pdp_ice_grid_c <-
         legend = "bottom"
     ) +
     theme(plot.margin = margin(0.1, 0.1, 0.4, 0.1, "cm"))
-pdp_ice_grid_c # Figure
+pdp_ice_grid_c # Figure 10
 
 # save grid of centered ice and pdp plots
 ggsave(
-    fig("pdp_ice_grid_c_gbsg2.pdf"),
+    fig("figure_10.pdf"),
     plot = pdp_ice_grid_c,
     width = 14,
     height = 6,
@@ -591,7 +591,7 @@ plot_hjk_horTh
 
 
 ## create plot grid and save plots ---------------------------------------------
-# create grid of h-statistic plots
+# create grid of h-statistics plots
 h_grid <-
     ggarrange(
         plot_hjk_pnodes,
@@ -602,11 +602,11 @@ h_grid <-
         legend = "bottom"
     ) +
     theme(plot.margin = margin(0.1, 0.1, 0.4, 0.1, "cm"))
-h_grid # Figure
+h_grid # Figure 11
 
-# save grid of h-statistic plots
+# save grid of h-statistics plots
 ggsave(
-    fig("h_grid.pdf"),
+    fig("figure_11.pdf"),
     plot = h_grid,
     width = 14,
     height = 6,
@@ -687,7 +687,7 @@ plot_ale_coxph <- plot_ale_pdp(
 )
 plot_ale_coxph
 
-# create grid of centered ice and pdp plots
+# create grid of ale plots
 ale_grid <-
     ggarrange(
         plot_ale_coxph,
@@ -698,11 +698,11 @@ ale_grid <-
         legend = "bottom"
     ) +
     theme(plot.margin = margin(0.1, 0.1, 0.4, 0.1, "cm"))
-ale_grid # Figure
+ale_grid # Figure 12
 
-# save grid of uncentered ice and pdp plots
+# save grid of ale plots
 ggsave(
-    fig("ale_grid_gbsg2.pdf"),
+    fig("figure_12.pdf"),
     plot = ale_grid,
     width = 14,
     height = 6,
@@ -762,7 +762,7 @@ individuals_table <- data.frame(
         individual_33[[8]]
     )
 )
-individuals_table # Table
+individuals_table # Table 2
 
 ## Compute lime values ---------------------------------------------------------
 # compute lime values for individual 5
@@ -919,11 +919,11 @@ surv_grid <-
         legend = "bottom"
     ) +
     theme(plot.margin = margin(0.1, 0.1, 0.4, 0.1, "cm"))
-surv_grid # Figure
+surv_grid # Figure 18
 
 # save grid of survival function plots
 ggsave(
-    fig("surv_grid_gbsg2.pdf"),
+    fig("figure_18.pdf"),
     plot = surv_grid,
     width = 14,
     height = 6,
@@ -940,11 +940,11 @@ lime_grid <-
         common.legend = FALSE
     ) +
     theme(plot.margin = margin(0.1, 0.1, 0.4, 0.1, "cm"))
-lime_grid # Figure
+lime_grid # Figure 13
 
 # save grid of local importance plots
 ggsave(
-    fig("lime_grid_gbsg2.pdf"),
+    fig("figure_13.pdf"),
     plot = lime_grid,
     width = 14,
     height = 6,
@@ -1033,7 +1033,7 @@ plot_shap_33
 
 
 ## Create plot grid and save plots ---------------------------------------------
-# create grid of ale plots
+# create grid of shap plots
 shap_grid <-
     ggarrange(
         plot_shap_5,
@@ -1044,11 +1044,11 @@ shap_grid <-
         legend = "bottom"
     ) +
     theme(plot.margin = margin(0.1, 0.1, 0.4, 0.1, "cm"))
-shap_grid # Figure
+shap_grid # Figure 14
 
 # save grid of shap plots
 ggsave(
-    fig("shap_grid_gbsg2.pdf"),
+    fig("figure_14.pdf"),
     plot = shap_grid,
     width = 14,
     height = 6,
@@ -1070,6 +1070,7 @@ survshap_global_ranger <-
 ## Preprocess results for aggregated shap plot ---------------------------------
 # rename results
 agg_results <- survshap_global_ranger
+
 # aggregate shap values of all observations
 agg_results$result <-
     aggregate_shap_multiple_observations(agg_results$result, colnames(agg_results$result[[1]]), function(x)
@@ -1156,7 +1157,7 @@ beeswarm_grid <-
         nrow = 2,
         common.legend = FALSE
     )
-beeswarm_grid # Figure
+beeswarm_grid
 
 # create grid of aggregate shap plots
 shap_agg_grid <-
@@ -1168,11 +1169,11 @@ shap_agg_grid <-
         common.legend = FALSE
     ) +
     theme(plot.margin = margin(0.1, 0.1, 0.4, 0.1, "cm"))
-shap_agg_grid # Figure
+shap_agg_grid # Figure 15
 
 # save grid of shap plots
 ggsave(
-    fig("shap_agg_grid_gbsg2.pdf"),
+    fig("figure_15.pdf"),
     plot = shap_agg_grid,
     width = 14,
     height = 6,
