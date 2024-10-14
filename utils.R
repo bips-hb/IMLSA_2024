@@ -3,7 +3,7 @@
 
 
 ## Shap aggregation ------------------------------------------------------------
-# # this code is taken from the R survex package
+# this code is taken from the R survex package
 aggregate_shap_multiple_observations <-
     function(shap_res_list,
              feature_names,
@@ -45,7 +45,12 @@ aggregate_shap_multiple_observations <-
 
 
 ## Feature interaction ---------------------------------------------------------
-# function to compute Friedman's H_jk statistic
+#' Compute Friedman's H_jk statistic
+#'
+#' @param explainer an explainer object - model preprocessed by the `survex::explain()` function.
+#' @param feature string - name of the feature for which h-statistic should be computed
+#' @param N numeric - number of observations that should be sampled for calculation. If `NULL` then variable importance will be calculated on the whole dataset.
+#' @returns A data.frame containing H_jk statistics value ready for plotting.
 feature_interaction <- function(explainer, feature, N = NULL) {
     # create list of features
     feature_list <- colnames(explainer$data)
