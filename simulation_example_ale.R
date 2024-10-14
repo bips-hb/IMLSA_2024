@@ -46,10 +46,10 @@ simdat <- simsurv(
     maxt = 5
 )
 
-# remove id column
+# remove id column from simulation dataframe
 y <- simdat[, -1]
 
-# add feature values to simulated survival times
+# add feature values to simulation dataframe
 dat <- cbind(y, x)
 
 # simulate random censoring
@@ -261,7 +261,7 @@ plot_pdp_x2
 
 
 ## Create plot grids and save plots ---------------------------------------------
-# create grid of pdp plots
+# create grid of ale plots
 ale_grid <-
     ggarrange(
         plot_ale_x1,
@@ -272,11 +272,11 @@ ale_grid <-
         legend = "bottom"
     ) +
     theme(plot.margin = margin(0.1, 0.1, 0.4, 0.1, "cm"))
-ale_grid # Figure
+ale_grid # Figure 6
 
 # save grid of ale plots
 ggsave(
-    fig("ale_comp_grid_sim.pdf"),
+    fig("figure_6.pdf"),
     plot = ale_grid,
     width = 14,
     height = 6,
@@ -294,11 +294,11 @@ pdp_grid <-
         legend = "bottom"
     ) +
     theme(plot.margin = margin(0.1, 0.1, 0.4, 0.1, "cm"))
-pdp_grid # Figure
+pdp_grid # Figure 5
 
-# save grid of ale plots
+# save grid of pdp plots
 ggsave(
-    fig("pdp_comp_grid_sim.pdf"),
+    fig("figure_5.pdf"),
     plot = pdp_grid,
     width = 14,
     height = 6,
