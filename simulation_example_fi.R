@@ -64,10 +64,10 @@ simdat <- simsurv(hazard = haz,
                   betas = betas,
                   maxt = 20)
 
-# remove id column
+# remove id column from simulation dataframe
 y <- simdat[, -1]
 
-# add feature values to simulated survival times
+# add feature values to simulation dataframe
 dat <- cbind(y, x)
 
 # simulate random censoring
@@ -166,7 +166,7 @@ plot_hjk_ranger_x1
 
 
 ## create plot grid and save plots ---------------------------------------------
-# create grid of ale plots
+# create grid of h-statistics plots
 inter_grid <-
     ggarrange(
         plot_hjk_coxph_x1,
@@ -177,11 +177,11 @@ inter_grid <-
         legend = "bottom"
     ) +
     theme(plot.margin = margin(0.1, 0.1, 0.4, 0.1, "cm"))
-inter_grid # Figure
+inter_grid # Figure 7
 
-# save grid of ale plots
+# save grid of h-statistics plots
 ggsave(
-    fig("inter_sim_grid.pdf"),
+    fig("figure_7.pdf"),
     plot = inter_grid,
     width = 14,
     height = 6,
