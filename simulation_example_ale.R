@@ -92,7 +92,7 @@ ranger_rsf <- rfsrc(
 
 ## Create survex explainer object ----------------------------------------------
 # create explainer object for ranger model on test data
-ranger_explainer <- explain(
+ranger_explainer <- survex::explain(
     ranger_rsf,
     data = test_dat[, -c(1, 2)],
     y = Surv(test_dat$eventtime, test_dat$status),
@@ -133,6 +133,7 @@ plot_ale_x1 <- plot_ale_pdp(
     df_ale_ranger_x1,
     model = "ranger",
     x_label = "x1",
+    y_label = "ALE value",
     limits = c(-0.8, 0.8),
     breaks_x = seq(0, 1, by = 0.2),
     breaks_y = seq(-0.8, 0.8, by = 0.2),
@@ -167,6 +168,7 @@ plot_ale_x2 <- plot_ale_pdp(
     df_ale_ranger_x2,
     model = "ranger",
     x_label = "x2",
+    y_label = "ALE value",
     limits = c(-0.8, 0.8),
     breaks_x = seq(0, 1, by = 0.2),
     breaks_y = seq(-0.8, 0.8, by = 0.2),
@@ -212,6 +214,7 @@ plot_pdp_x1 <- plot_ale_pdp(
     df_pdp_ranger_x1,
     model = "ranger",
     x_label = "x1",
+    y_label = "PD value",
     limits = c(-0.8, 0.8),
     breaks_x = seq(0, 1, by = 0.2),
     breaks_y = seq(-0.8, 0.8, by = 0.2),
@@ -251,6 +254,7 @@ plot_pdp_x2 <- plot_ale_pdp(
     df_pdp_ranger_x2,
     model = "ranger",
     x_label = "x2",
+    y_label = "PD value",
     limits = c(-0.8, 0.8),
     breaks_x = seq(0, 1, by = 0.2),
     breaks_y = seq(-0.8, 0.8, by = 0.2),

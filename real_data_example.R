@@ -149,11 +149,11 @@ plot_brier <-
             linewidth = 0.3
         )
     )
-plot_brier # Figure 8 b)
+plot_brier # Figure 9 b)
 
 # save custom plot
 ggsave(
-    fig("figure_8b.pdf"),
+    fig("figure_9b.pdf"),
     plot = plot_brier,
     width = 7,
     height = 6,
@@ -201,7 +201,7 @@ plot_km <- ggsurvplot(
     font.tickslab = c(18),
     legend = "none"
 )
-plot_km # Figure 8 a)
+plot_km # Figure 9 a)
 
 # save Kaplan-Meier curve
 ggsave_workaround <- function(g) {
@@ -216,7 +216,7 @@ ggsave_workaround <- function(g) {
 plot_km_save <- ggsave_workaround(plot_km)
 
 ggsave(
-    fig("figure_8a.pdf"),
+    fig("figure_9a.pdf"),
     plot = plot_km_save,
     width = 7,
     height = 6,
@@ -266,6 +266,7 @@ plot_pfi_coxph <- plot_pfi(
         "#D55E00",
         "#CC79A7"
     ),
+    ylimits = c(-0.01, 0.04),
     breaks = c(seq(0, 2600, 500)),
 )
 plot_pfi_coxph
@@ -298,7 +299,7 @@ df_pfi_ranger <-
     subset(df_pfi_ranger, features != "_full_model_")
 
 # create custom plot of permutation feature importance over time
-plot_pfi_ranger <- plot_fi(
+plot_pfi_ranger <- plot_pfi(
     df_pfi_ranger,
     model = "ranger",
     color_values = c(
@@ -311,6 +312,7 @@ plot_pfi_ranger <- plot_fi(
         "#D55E00",
         "#CC79A7"
     ),
+    ylimits = c(-0.01, 0.04),
     breaks = c(seq(0, 2600, 500))
 )
 plot_pfi_ranger
@@ -328,11 +330,11 @@ pfi_grid <-
         legend = "bottom"
     ) +
     theme(plot.margin = margin(0.1, 0.1, 0.4, 0.1, "cm"))
-pfi_grid # Figure 9
+pfi_grid # Figure 10
 
 # save grid of pfi plots
 ggsave(
-    fig("figure_9.pdf"),
+    fig("figure_10.pdf"),
     plot = pfi_grid,
     width = 14,
     height = 6,
@@ -399,14 +401,15 @@ df_pdp_coxph_center <- aggregate(yhat ~ time + horTh, data = df_ice_coxph_merge[
 
 ## Create custom plots ---------------------------------------------------------
 # create custom plot of centered ice and pdp curves over time
+source("plotting_functions.R")
 plot_pdp_ice_coxph_c <- plot_ice_pdp(
     df_ice_coxph_merge,
     df_pdp_coxph_center,
     model = "coxph",
-    horTh,
     variable_name = "horTh",
+    status_name = "cens",
     time,
-    cens,
+    y_label = "ICE/PD value",
     limits = c(-0.1, 0.3),
     breaks_x = c(seq(0, 2600, 500)),
     breaks_y = seq(-0.1, 0.3, by = 0.1)
@@ -468,10 +471,10 @@ plot_pdp_ice_ranger_c <- plot_ice_pdp(
     df_ice_ranger_merge,
     df_pdp_ranger_center,
     model = "ranger",
-    horTh,
     variable_name = "horTh",
+    status_name = "cens",
     time,
-    cens,
+    y_label = "ICE/PD value",
     limits = c(-0.1, 0.3),
     breaks_x = c(seq(0, 2600, 500)),
     breaks_y = seq(-0.1, 0.3, by = 0.1)
@@ -489,11 +492,11 @@ pdp_ice_grid_c <-
         legend = "bottom"
     ) +
     theme(plot.margin = margin(0.1, 0.1, 0.4, 0.1, "cm"))
-pdp_ice_grid_c # Figure 10
+pdp_ice_grid_c # Figure 11
 
 # save grid of centered ice and pdp plots
 ggsave(
-    fig("figure_10.pdf"),
+    fig("figure_11.pdf"),
     plot = pdp_ice_grid_c,
     width = 14,
     height = 6,
@@ -512,6 +515,7 @@ ggsave(
 df_Hjk_pnodes <-
     feature_interaction(explainer = ranger_explainer,
                         feature = "pnodes",
+                        categorical_variables = c("horTh", "menostat", "tgrade"),
                         N = NULL)
 
 # add row of pnodes for legend
@@ -559,6 +563,7 @@ plot_hjk_pnodes
 df_Hjk_horTh <-
     feature_interaction(explainer = ranger_explainer,
                         feature = "horTh",
+                        categorical_variables = c("horTh", "menostat", "tgrade"),
                         N = NULL)
 
 # add row of horTh for legend
@@ -602,11 +607,11 @@ h_grid <-
         legend = "bottom"
     ) +
     theme(plot.margin = margin(0.1, 0.1, 0.4, 0.1, "cm"))
-h_grid # Figure 11
+h_grid # Figure 12
 
 # save grid of h-statistics plots
 ggsave(
-    fig("figure_11.pdf"),
+    fig("figure_12.pdf"),
     plot = h_grid,
     width = 14,
     height = 6,
@@ -647,6 +652,7 @@ plot_ale_ranger <- plot_ale_pdp(
     df_ale_ranger,
     model = "ranger",
     x_label = "tsize",
+    y_label = "ALE value",
     limits = c(-0.15, 0.15),
     breaks_x = seq(0, 80, by = 10),
     breaks_y = seq(-0.15, 0.15, by = 0.1)
@@ -681,6 +687,7 @@ plot_ale_coxph <- plot_ale_pdp(
     df_ale_coxph,
     model = "coxph",
     x_label = "tsize",
+    y_label = "ALE value",
     limits = c(-0.15, 0.15),
     breaks_x = seq(0, 80, by = 10),
     breaks_y = seq(-0.15, 0.15, by = 0.1)
@@ -698,11 +705,11 @@ ale_grid <-
         legend = "bottom"
     ) +
     theme(plot.margin = margin(0.1, 0.1, 0.4, 0.1, "cm"))
-ale_grid # Figure 12
+ale_grid # Figure 13
 
 # save grid of ale plots
 ggsave(
-    fig("figure_12.pdf"),
+    fig("figure_13.pdf"),
     plot = ale_grid,
     width = 14,
     height = 6,
@@ -919,11 +926,11 @@ surv_grid <-
         legend = "bottom"
     ) +
     theme(plot.margin = margin(0.1, 0.1, 0.4, 0.1, "cm"))
-surv_grid # Figure 18
+surv_grid # Figure 19
 
 # save grid of survival function plots
 ggsave(
-    fig("figure_18.pdf"),
+    fig("figure_19.pdf"),
     plot = surv_grid,
     width = 14,
     height = 6,
@@ -940,11 +947,11 @@ lime_grid <-
         common.legend = FALSE
     ) +
     theme(plot.margin = margin(0.1, 0.1, 0.4, 0.1, "cm"))
-lime_grid # Figure 13
+lime_grid # Figure 14
 
 # save grid of local importance plots
 ggsave(
-    fig("figure_13.pdf"),
+    fig("figure_14.pdf"),
     plot = lime_grid,
     width = 14,
     height = 6,
@@ -1044,13 +1051,13 @@ shap_grid <-
         legend = "bottom"
     ) +
     theme(plot.margin = margin(0.1, 0.1, 0.4, 0.1, "cm"))
-shap_grid # Figure 14
+shap_grid # Figure 15
 
 # save grid of shap plots
 ggsave(
-    fig("figure_14.pdf"),
+    fig("figure_15.pdf"),
     plot = shap_grid,
-    width = 14,
+    width = 15,
     height = 6,
     device = "pdf"
 )
@@ -1169,11 +1176,11 @@ shap_agg_grid <-
         common.legend = FALSE
     ) +
     theme(plot.margin = margin(0.1, 0.1, 0.4, 0.1, "cm"))
-shap_agg_grid # Figure 15
+shap_agg_grid # Figure 16
 
 # save grid of shap plots
 ggsave(
-    fig("figure_15.pdf"),
+    fig("figure_16.pdf"),
     plot = shap_agg_grid,
     width = 14,
     height = 6,

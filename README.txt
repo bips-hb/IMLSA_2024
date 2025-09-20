@@ -22,13 +22,13 @@ real_data_example.R: code file containing the example of an IML analysis on real
 
 The code was produced with the following versions of R and packages:
 
-R version 4.4.0 (2024-04-24)
+R version 4.5.1 (2025-06-13)
 Platform: aarch64-apple-darwin20
-Running under: macOS 15.0.1
+Running under: macOS Sequoia 15.6.1
 
 Matrix products: default
 BLAS:   /System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/libBLAS.dylib
-LAPACK: /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.0
+LAPACK: /Library/Frameworks/R.framework/Versions/4.5-arm64/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1
 
 locale:
 [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
@@ -40,34 +40,38 @@ attached base packages:
 [1] stats     graphics  grDevices utils     datasets  methods   base
 
 other attached packages:
- [1] ranger_0.16.0         simsurv_1.0.0         data.table_1.15.4
- [4] dplyr_1.1.4           ggbeeswarm_0.7.2      ggnewscale_0.5.0
- [7] survminer_0.4.9       ggpubr_0.6.0          survAUC_1.3-0
-[10] ggplot2_3.5.1         survex_1.2.0          randomForestSRC_3.3.1
-[13] pec_2023.04.12        prodlim_2023.08.28    survival_3.5-8
+ [1] rlang_1.1.6           dplyr_1.1.4           ggbeeswarm_0.7.2      survAUC_1.3-0
+ [5] data.table_1.17.8     pec_2025.06.24        prodlim_2025.04.28    survminer_0.5.1
+ [9] ggpubr_0.6.1          ggplot2_4.0.0         ggnewscale_0.5.2      randomForestSRC_3.4.1
+[13] ranger_0.17.0         survex_1.2.0          survival_3.8-3        simsurv_1.0.0
 
 loaded via a namespace (and not attached):
- [1] gridExtra_2.3       sandwich_3.1-0      rlang_1.1.4         magrittr_2.0.3
- [5] multcomp_1.4-25     polspline_1.1.25    compiler_4.4.0      vctrs_0.6.5
- [9] quantreg_5.98       stringr_1.5.1       pkgconfig_2.0.3     fastmap_1.2.0
-[13] backports_1.5.0     KMsurv_0.1-5        utf8_1.2.4          rmarkdown_2.27
-[17] MatrixModels_0.5-3  purrr_1.0.2         xfun_0.44           jsonlite_1.8.8
-[21] timereg_2.0.5       broom_1.0.6         parallel_4.4.0      data.tree_1.1.0
-[25] cluster_2.1.6       R6_2.5.1            stringi_1.8.4       RColorBrewer_1.1-3
-[29] parallelly_1.37.1   car_3.1-2           rpart_4.1.23        numDeriv_2016.8-1.1
-[33] Rcpp_1.0.12         iterators_1.0.14    knitr_1.47          future.apply_1.11.2
-[37] zoo_1.8-12          base64enc_0.1-3     Matrix_1.7-0        splines_4.4.0
-[41] nnet_7.3-19         tidyselect_1.2.1    rstudioapi_0.16.0   abind_1.4-5
-[45] codetools_0.2-20    listenv_0.9.1       lattice_0.22-6      tibble_3.2.1
-[49] withr_3.0.0         evaluate_0.24.0     foreign_0.8-86      future_1.33.2
-[53] survMisc_0.5.6      pillar_1.9.0        carData_3.0-5       DiagrammeR_1.0.11
-[57] checkmate_2.3.1     foreach_1.5.2       generics_0.1.3      munsell_0.5.1
-[61] scales_1.3.0        globals_0.16.3      xtable_1.8-4        glue_1.7.0
-[65] rms_6.8-1           Hmisc_5.1-3         tools_4.4.0         SparseM_1.83
-[69] ggsignif_0.6.4      visNetwork_2.1.2    mvtnorm_1.2-5       grid_4.4.0
-[73] DALEX_2.4.3         tidyr_1.3.1         colorspace_2.1-0    nlme_3.1-164
-[77] patchwork_1.2.0     beeswarm_0.4.0      htmlTable_2.4.2     vipor_0.4.7
-[81] Formula_1.2-5       cli_3.6.2           km.ci_0.5-6         fansi_1.0.6
-[85] lava_1.8.0          gtable_0.3.5        rstatix_0.7.2       digest_0.6.35
-[89] TH.data_1.1-2       htmlwidgets_1.6.4   htmltools_0.5.8.1   lifecycle_1.0.4
-[93] MASS_7.3-60.2
+  [1] RColorBrewer_1.1-3        rstudioapi_0.17.1         jsonlite_2.0.0            shape_1.4.6.1
+  [5] magrittr_2.0.4            TH.data_1.1-4             farver_2.1.2              DALEX_2.5.2
+  [9] rmarkdown_2.29            vctrs_0.6.5               base64enc_0.1-3           rstatix_0.7.2
+ [13] htmltools_0.5.8.1         polspline_1.1.25          broom_1.0.10              Formula_1.2-5
+ [17] parallelly_1.45.1         htmlwidgets_1.6.4         plyr_1.8.9                sandwich_3.1-1
+ [21] zoo_1.8-14                commonmark_2.0.0          lifecycle_1.0.4           cmprsk_2.2-12
+ [25] iterators_1.0.14          pkgconfig_2.0.3           Matrix_1.7-3              R6_2.6.1
+ [29] fastmap_1.2.0             future_1.67.0             digest_0.6.37             numDeriv_2016.8-1.1
+ [33] colorspace_2.1-1          patchwork_1.3.2           rprojroot_2.1.1           Hmisc_5.2-3
+ [37] labeling_0.4.3            progressr_0.15.1          km.ci_0.5-6               abind_1.4-8
+ [41] riskRegression_2025.09.17 compiler_4.5.1            here_1.0.2                withr_3.0.2
+ [45] htmlTable_2.4.3           S7_0.2.0                  backports_1.5.0           carData_3.0-5
+ [49] ggsignif_0.6.4            MASS_7.3-65               lava_1.8.1                quantreg_6.1
+ [53] tools_4.5.1               vipor_0.4.7               foreign_0.8-90            beeswarm_0.4.0
+ [57] future.apply_1.20.0       nnet_7.3-20               doFuture_1.1.2            glue_1.8.0
+ [61] DiagrammeR_1.0.11         mets_1.3.7                nlme_3.1-168              gridtext_0.1.5
+ [65] grid_4.5.1                checkmate_2.3.3           cluster_2.1.8.1           reshape2_1.4.4
+ [69] generics_0.1.4            kernelshap_0.9.0          gtable_0.3.6              KMsurv_0.1-6
+ [73] tidyr_1.3.1               xml2_1.4.0                car_3.1-3                 foreach_1.5.2
+ [77] pillar_1.11.1             markdown_2.0              stringr_1.5.2             splines_4.5.1
+ [81] ggtext_0.1.2              lattice_0.22-7            SparseM_1.84-2            tidyselect_1.2.1
+ [85] rms_8.0-0                 knitr_1.50                gridExtra_2.3             litedown_0.7
+ [89] xfun_0.53                 visNetwork_2.1.4          stringi_1.8.7             evaluate_1.0.5
+ [93] codetools_0.2-20          data.tree_1.2.0           tibble_3.3.0              cli_3.6.5
+ [97] rpart_4.1.24              xtable_1.8-4              survMisc_0.5.6            Rcpp_1.1.0
+[101] globals_0.18.0            parallel_4.5.1            MatrixModels_0.5-4        listenv_0.9.1
+[105] glmnet_4.1-10             viridisLite_0.4.2         mvtnorm_1.3-3             timereg_2.0.7
+[109] scales_1.4.0              purrr_1.1.0               crayon_1.5.3              cowplot_1.2.0
+[113] multcomp_1.4-28

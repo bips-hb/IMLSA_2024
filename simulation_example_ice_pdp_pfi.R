@@ -85,7 +85,7 @@ plot_km <- ggsurvplot(
     font.tickslab = c(18),
     legend = "none"
 )
-plot_km # Figure 17 a)
+plot_km # Figure 18 a)
 
 # save Kaplan-Meier curve plot
 ggsave_workaround <- function(g) {
@@ -100,7 +100,7 @@ ggsave_workaround <- function(g) {
 plot_km_save <- ggsave_workaround(plot_km)
 
 ggsave(
-    fig("figure_17a.pdf"),
+    fig("figure_18a.pdf"),
     plot = plot_km_save,
     width = 7,
     height = 6,
@@ -150,7 +150,7 @@ ranger_rsf <- rfsrc(
 
 ## Create survex explainer objects ---------------------------------------------
 # create explainer object for coxph model on test data
-coxph_explainer <- explain(
+coxph_explainer <- survex::explain(
     coxph,
     times = times,
     data = test_dat[, -c(1, 2)],
@@ -158,7 +158,7 @@ coxph_explainer <- explain(
 )
 
 # create explainer object for ranger model on test data
-ranger_explainer <- explain(
+ranger_explainer <- survex::explain(
     ranger_rsf,
     data = test_dat[, -c(1, 2)],
     y = Surv(test_dat$eventtime, test_dat$status),
@@ -232,11 +232,11 @@ plot_brier <-
             linewidth = 0.3
         )
     )
-plot_brier # Figure 17 b)
+plot_brier # Figure 18 b)
 
 # save custom plot
 ggsave(
-    fig("figure_17b.pdf"),
+    fig("figure_18b.pdf"),
     plot = plot_brier,
     width = 7,
     height = 6,
@@ -319,10 +319,10 @@ plot_pdp_ice_coxph_uc <- plot_ice_pdp(
     df_ice_coxph,
     df_pdp_coxph,
     model = "coxph",
-    treatment,
+    y_label = "ICE/PD value",
     variable_name = "treatment",
-    eventtime,
-    status,
+    status_name = "status",
+    time_var = eventtime,
     limits = c(0, 1),
     breaks_x = seq(0, 5, by = 1),
     breaks_y = seq(0, 1, by = 0.2)
@@ -334,10 +334,10 @@ plot_pdp_ice_coxph_c <- plot_ice_pdp(
     df_ice_coxph_center,
     df_pdp_coxph_center,
     model = "coxph",
-    treatment,
+    y_label = "ICE/PD value",
     variable_name = "treatment",
-    eventtime,
-    status,
+    status_name = "status",
+    time_var = eventtime,
     limits = c(-0.6, 0.1),
     breaks_x = seq(0, 5, by = 1),
     breaks_y = seq(-0.6, 0.1, by = 0.1)
@@ -425,10 +425,10 @@ plot_pdp_ice_ranger_uc <- plot_ice_pdp(
     df_ice_ranger,
     df_pdp_ranger,
     model = "ranger",
-    treatment,
+    y_label = "ICE/PD value",
     variable_name = "treatment",
-    eventtime,
-    status,
+    time_var = eventtime,
+    status_name = "status",
     limits = c(0, 1),
     breaks_x = seq(0, 5, by = 1),
     breaks_y = seq(0, 1, by = 0.2)
@@ -440,10 +440,10 @@ plot_pdp_ice_ranger_c <- plot_ice_pdp(
     df_ice_ranger_center,
     df_pdp_ranger_center,
     model = "ranger",
-    treatment,
+    y_label = "ICE/PD value",
     variable_name = "treatment",
-    eventtime,
-    status,
+    time_var = eventtime,
+    status_name = "status",
     limits = c(-0.9, 0.4),
     breaks_x = seq(0, 5, by = 1),
     breaks_y = seq(-0.9, 0.4, by = 0.2)
@@ -505,7 +505,7 @@ pdp_ice_grid_c # Figure 16
 
 # save grid of centered ice and pdp plots
 ggsave(
-    fig("figure_16.pdf"),
+    fig("figure_17.pdf"),
     plot = pdp_ice_grid_c,
     width = 14,
     height = 6,
@@ -551,6 +551,116 @@ ice_grid_c # Figure 3
 ggsave(
     fig("figure_3.pdf"),
     plot = ice_grid_c,
+    width = 14,
+    height = 6,
+    device = "pdf"
+)
+
+
+
+
+
+#------------------------------------------------------------------------------#
+####                   Permutation Feature Importance                       ####
+#------------------------------------------------------------------------------#
+
+
+## coxph -----------------------------------------------------------------------
+# compute permutation feature importance
+pfi_coxph <- model_parts(coxph_explainer)
+
+# extract relevant results for plotting
+df_list <- c(list(pfi_coxph))
+transformed_dfs <- lapply(df_list, function(x) {
+    x <- x$result
+    label <- unique(x$label)
+    x <-
+        x[x$`_permutation_` == 0, !colnames(x) %in% c("_permutation_", "label", "_baseline_")]
+    plotting_df <-
+        with(x, cbind(x[1], stack(x, select = -`_times_`), label, row.names = NULL))
+})
+df_pfi_coxph <- do.call(rbind, transformed_dfs)
+
+# rename columns
+names(df_pfi_coxph)[names(df_pfi_coxph) == "_times_"] <- "time"
+names(df_pfi_coxph)[names(df_pfi_coxph) == "ind"] <- "features"
+
+# delete full model results and results
+df_pfi_coxph <- subset(df_pfi_coxph, features != "_full_model_")
+
+# create custom plot of permutation feature importance over time
+plot_pfi_coxph <- plot_pfi(
+    df_pfi_coxph,
+    color_values = c(
+        "#0072B2",
+        "#D55E00",
+        "#CC79A7"
+    ),
+    ylimits = c(-0.02, 0.13),
+    breaks = c(seq(0, 5, 1))
+)
+plot_pfi_coxph
+
+
+## ranger ----------------------------------------------------------------------
+# compute permutation feature importance
+pfi_ranger <- model_parts(ranger_explainer)
+
+# extract relevant results for plotting
+df_list <- c(list(pfi_ranger))
+transformed_dfs <- lapply(df_list, function(x) {
+    x <- x$result
+    label <- unique(x$label)
+    x <-
+        x[x$`_permutation_` == 0, !colnames(x) %in% c("_permutation_", "label", "_baseline_")]
+    plotting_df <-
+        with(x, cbind(x[1], stack(x, select = -`_times_`), label, row.names = NULL))
+})
+df_pfi_ranger <- do.call(rbind, transformed_dfs)
+
+# rename columns
+names(df_pfi_ranger)[names(df_pfi_ranger) == "_times_"] <-
+    "time"
+names(df_pfi_ranger)[names(df_pfi_ranger) == "ind"] <-
+    "features"
+
+# delete full model results
+df_pfi_ranger <-
+    subset(df_pfi_ranger, features != "_full_model_")
+
+# create custom plot of permutation feature importance over time
+plot_pfi_ranger <- plot_pfi(
+    df_pfi_ranger,
+    model = "ranger",
+    color_values = c(
+        "#0072B2",
+        "#D55E00",
+        "#CC79A7"
+    ),
+    ylimits = c(-0.02, 0.13),
+    breaks = c(seq(0, 5, 1))
+)
+plot_pfi_ranger
+
+
+## Create plot grid and save plots ---------------------------------------------
+# create grid of pfi plots
+pfi_grid <-
+    ggarrange(
+        plot_pfi_coxph,
+        plot_pfi_ranger,
+        ncol = 2,
+        nrow = 1,
+        common.legend = TRUE,
+        legend = "bottom"
+    ) +
+    theme(plot.margin = margin(0.1, 0.1, 0.4, 0.1, "cm"))
+pfi_grid # Figure 8
+
+# save grid of pfi plots
+ggsave(
+    fig("figure_8.pdf"),
+    plot = pfi_grid,
     width = 14,
     height = 6,
     device = "pdf"

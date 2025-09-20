@@ -13,7 +13,8 @@
 plot_pfi <- function(df_pfi,
                      model = "coxph",
                      color_values = c("#009E73", "#0072B2", "#CC79A7"),
-                     breaks = seq(0, 5, 1)) {
+                     breaks = seq(0, 5, 1),
+                     ylimits = NULL) {
     pfi_plot <- ggplot(df_pfi,
                        aes(
                            x = time,
@@ -27,7 +28,7 @@ plot_pfi <- function(df_pfi,
         ggtitle("", subtitle = model) +
         theme_bw() +
         scale_x_continuous(breaks = breaks) +
-        ylab(expression(paste("pfi"))) +
+        ylab(expression(paste("PFI value"))) +
         theme(
             legend.position = "bottom",
             plot.subtitle = element_text(size = 20),
@@ -43,8 +44,15 @@ plot_pfi <- function(df_pfi,
                 linewidth = 0.3
             )
         )
+
+    # Add y-axis limits if provided
+    if (!is.null(ylimits)) {
+        pfi_plot <- pfi_plot + scale_y_continuous(limits = ylimits)
+    }
+
     return(pfi_plot)
 }
+
 
 
 
@@ -65,16 +73,18 @@ plot_pfi <- function(df_pfi,
 plot_ice_pdp <- function(df_ice,
                          df_pdp,
                          model = "coxph",
-                         variable,
+                         y_label = "prediction",
                          variable_name = "treatment",
+                         status_name = "status",
                          time_var,
-                         status_var,
                          limits = c(0, 1),
                          breaks_x = seq(0, 1, by = 0.2),
                          breaks_y = seq(0, 1, by = 0.2)) {
-    variable <- enquo(variable)
+    #variable <- enquo(variable)
     time_var <- enquo(time_var)
-    status_var <- enquo(status_var)
+    #status_var <- enquo(status_var)
+    variable_sym <- sym(variable_name)
+    status_sym <- sym(status_name)
 
     pdp_ice_plot <- ggplot() +
         geom_line(
@@ -82,8 +92,8 @@ plot_ice_pdp <- function(df_ice,
             aes(
                 x = time,
                 y = yhat,
-                group = interaction(ids, !!variable),
-                color = !!variable
+                group = interaction(ids, !!variable_sym),
+                color = !!variable_sym
             ),
             alpha = 0.1
         ) +
@@ -92,9 +102,9 @@ plot_ice_pdp <- function(df_ice,
             aes(
                 x = time,
                 y = yhat,
-                color = !!variable,
-                linetype = !!variable,
-                group = !!variable
+                color = !!variable_sym,
+                linetype = !!variable_sym,
+                group = !!variable_sym
             ),
             linewidth = 1.5,
             lineend = "round",
@@ -110,7 +120,7 @@ plot_ice_pdp <- function(df_ice,
             aes(
                 x = !!time_var,
                 y = max(df_ice$yhat),
-                color = factor(!!status_var)
+                color = factor(!!status_sym)
             ),
             sides = "b",
             alpha = 0.8,
@@ -124,7 +134,7 @@ plot_ice_pdp <- function(df_ice,
             breaks = breaks_y,
             labels = scales::label_number(accuracy = 0.01)
         ) +
-        ylab("prediction") +
+        ylab(y_label) +
         theme(
             legend.position = "bottom",
             plot.subtitle = element_text(size = 20),
@@ -158,6 +168,7 @@ plot_ice_pdp <- function(df_ice,
 #' @returns A ggplot object.
 plot_ice <- function(df_ice,
                      model = "coxph",
+                     y_label = "ICE value",
                      limits_y = c(0, 1),
                      breaks_y = seq(0, 1, by = 0.2),
                      breaks_x = seq(15, 50, 5)) {
@@ -197,7 +208,7 @@ plot_ice <- function(df_ice,
             breaks = breaks_y,
             labels = scales::label_number(accuracy = 0.01)
         ) +
-        ylab("prediction") +
+        ylab("ICE value") +
         theme(
             legend.position = "bottom",
             plot.subtitle = element_text(size = 20),
@@ -234,6 +245,7 @@ plot_ice <- function(df_ice,
 plot_ale_pdp <- function(df_ale_pdp,
                          model = "ranger",
                          x_label = "x1",
+                         y_label = "ALE values",
                          limits = c(0, 1),
                          breaks_x = seq(0, 5, by = 1),
                          breaks_y = seq(0, 1, by = 0.2),
@@ -259,7 +271,7 @@ plot_ale_pdp <- function(df_ale_pdp,
             breaks = breaks_y,
             labels = scales::label_number(accuracy = 0.01)
         ) +
-        ylab("prediction") +
+        ylab(y_label) +
         xlab(x_label) +
         theme(
             legend.position = "bottom",
