@@ -2,43 +2,60 @@
 
 
 
-## Shap aggregation ------------------------------------------------------------
-# this code is taken from the R survex package
+## SHAP Aggregation ------------------------------------------------------------
+#' Aggregate SHAP results across multiple observations
+#'
+#' This helper function aggregates SHAP values from multiple observations
+#' (e.g., multiple individuals) into a single data frame. This is typically
+#' done by taking the arithmetic mean (or another user-specified aggregation
+#' function) across observations for each feature and time point.
+#'
+#' @param shap_res_list list - a list of SHAP results, where each element
+#'   is a data.frame containing SHAP values for one observation.
+#' @param feature_names character vector - names of the features for which
+#'   SHAP values are provided.
+#' @param aggregation_function function - function used to aggregate SHAP
+#'   values across observations (e.g. `mean`, `median`).
+#'
+#' @returns A data.frame with aggregated SHAP values per feature and time point.
+#'   If only a single observation is passed, the result is returned unchanged.
 aggregate_shap_multiple_observations <-
     function(shap_res_list,
              feature_names,
              aggregation_function) {
         if (length(shap_res_list) > 1) {
+            # Add rownames as a column to preserve ordering after rbind
             shap_res_list <- lapply(shap_res_list, function(x) {
                 x$rn <- rownames(x)
                 x
             })
 
+            # Combine all SHAP result data.frames into one
             full_survshap_results <- do.call("rbind", shap_res_list)
             rownames(full_survshap_results) <- NULL
 
-            # compute arithmetic mean for each time-point and feature across
-            # multiple observations
-
+            # Aggregate SHAP values across multiple observations
+            # by feature/timepoint using the specified function
             tmp_res <-
                 aggregate(
                     full_survshap_results[, !colnames(full_survshap_results) %in% c("rn")],
                     by = list(full_survshap_results$rn),
                     FUN = aggregation_function
                 )
-            rownames(tmp_res) <- tmp_res$Group.1
-            ordering <-
-                order(as.numeric(substring(rownames(tmp_res), 3)))
 
-            tmp_res <-
-                tmp_res[ordering, !colnames(tmp_res) %in% c("rn", "Group.1")]
+            # Restore rownames and ensure correct ordering (numeric)
+            rownames(tmp_res) <- tmp_res$Group.1
+            ordering <- order(as.numeric(substring(rownames(tmp_res), 3)))
+
+            # Reorder and drop helper columns
+            tmp_res <- tmp_res[ordering, !colnames(tmp_res) %in% c("rn", "Group.1")]
         } else {
-            # no aggregation required
+            # Only one observation → no aggregation needed
             tmp_res <- shap_res_list[[1]]
         }
+
+        # Return as data.frame to keep compatibility with plotting functions
         shap_values <- tmp_res
-        # transform to data.frame to make everything compatible with
-        # previous code
         return(shap_values)
     }
 
@@ -151,6 +168,26 @@ feature_interaction <- function(explainer, feature, categorical_variables = NULL
 
 
 
+## 2D Partial Dependence for Survival Models -----------------------------------
+#' Compute two-dimensional partial dependence profiles for survival models.
+#'
+#' This function generates pairwise partial dependence profiles (2D PDPs) for
+#' a set of variable pairs in a survival model. It can output survival or
+#' cumulative hazard predictions, optionally mean-centered.
+#'
+#' @param x explainer object created by `survex::explain()`, containing model,
+#'   prediction functions, and survival times.
+#' @param data data.frame - input dataset used for generating profiles.
+#' @param variables list - list of variable pairs (tuples) for which to compute 2D PDPs.
+#' @param categorical_variables character vector - names of categorical variables.
+#' @param grid_points numeric - number of grid points for numeric variables.
+#' @param variable_splits_type string - either `"quantiles"` or `"uniform"`, controls
+#'   how grid points are selected for numeric variables.
+#' @param center logical - if `TRUE`, predictions are mean-centered across the dataset.
+#' @param output_type string - `"survival"` (default) or `"cumhaz"` for type of prediction.
+#'
+#' @returns A data.frame containing the pairwise PDP results with columns for
+#'   variable names, grid values, times, and predicted outcomes.
 surv_pdp_2d <- function(x,
                         data,
                         variables,
@@ -159,6 +196,7 @@ surv_pdp_2d <- function(x,
                         variable_splits_type,
                         center,
                         output_type) {
+    # extract model and prediction function
     model <- x$model
     label <- x$label
     if (output_type == "survival"){
@@ -168,17 +206,22 @@ surv_pdp_2d <- function(x,
     }
     times <- x$times
 
+    # compute variable-specific grid splits (quantile- or uniform-based)
     unique_variables <- unlist(variables)
-    variable_splits <- calculate_variable_split(data,
-                                                variables = unique_variables,
-                                                categorical_variables = categorical_variables,
-                                                grid_points = grid_points,
-                                                variable_splits_type = variable_splits_type
+    variable_splits <- calculate_variable_split(
+        data,
+        variables = unique_variables,
+        categorical_variables = categorical_variables,
+        grid_points = grid_points,
+        variable_splits_type = variable_splits_type
     )
 
+    # compute profiles for each pair of variables
     profiles <- lapply(variables, FUN = function(variables_pair) {
         var1 <- variables_pair[1]
         var2 <- variables_pair[2]
+
+        # expand data to cover grid for var1 and var2
         expanded_data <- merge(variable_splits[[var1]], data[, !colnames(data) %in% variables_pair])
         names(expanded_data)[colnames(expanded_data) == "x"] <- var1
         remaining_cols <- colnames(data)[!colnames(data) %in% variables_pair]
@@ -187,7 +230,7 @@ surv_pdp_2d <- function(x,
         names(expanded_data)[colnames(expanded_data) == "x"] <- var2
         expanded_data <- expanded_data[, colnames(data)]
 
-
+        # baseline predictions for centering
         predictions_original <- predict_survival_function(
             model = model,
             newdata = data,
@@ -195,17 +238,20 @@ surv_pdp_2d <- function(x,
         )
         mean_pred <- colMeans(predictions_original)
 
+        # predictions on expanded grid
         predictions <- predict_survival_function(
             model = model,
             newdata = expanded_data,
             times = times
         )
 
+        # flatten and optionally mean-center predictions
         preds <- c(t(predictions))
         if (center) {
             preds <- preds - mean_pred
         }
 
+        # build results data.frame
         res <- data.frame(
             "_v1name_" = var1,
             "_v2name_" = var2,
@@ -218,32 +264,70 @@ surv_pdp_2d <- function(x,
             "_label_" = label,
             check.names = FALSE
         )
+
+        # average predictions in case of duplicates (categorical grids)
         return(aggregate(`_yhat_` ~ ., data = res, FUN = mean))
     })
 
+    # combine all profiles into single data.frame
     profiles <- do.call(rbind, profiles)
     profiles
 }
 
 
-calculate_variable_split <- function(data, variables = colnames(data), categorical_variables = NULL, grid_points = 101, variable_splits_type = "quantiles", new_observation = NA) {
+
+## Variable Split Calculation --------------------------------------------------
+#' Calculate grid splits for variables for partial dependence computation.
+#'
+#' This helper function generates grid points for numeric and categorical
+#' variables, used for creating partial dependence profiles (1D or 2D).
+#' For numeric variables, grid points can be chosen based on quantiles or
+#' uniformly spaced values. For categorical variables, all unique values
+#' (or values observed in `new_observation`) are used.
+#'
+#' @param data data.frame - dataset from which to calculate variable splits.
+#' @param variables character vector - names of variables to calculate splits for.
+#' @param categorical_variables character vector - names of categorical variables.
+#' @param grid_points numeric - number of grid points to generate for numeric variables.
+#' @param variable_splits_type string - `"quantiles"` (default) or `"uniform"`, defines
+#'   how numeric splits are selected.
+#' @param new_observation data.frame (optional) - observation(s) whose values should
+#'   be included in the grid to guarantee coverage.
+#'
+#' @returns A named list where each element contains the grid values for a variable.
+calculate_variable_split <- function(data,
+                                     variables = colnames(data),
+                                     categorical_variables = NULL,
+                                     grid_points = 101,
+                                     variable_splits_type = "quantiles",
+                                     new_observation = NA) {
     variable_splits <- lapply(variables, function(var) {
+        # extract non-missing values for the variable
         selected_column <- na.omit(data[, var])
 
         if (!(var %in% categorical_variables)) {
+            # numeric variable → create grid points
             probs <- seq(0, 1, length.out = grid_points)
             if (variable_splits_type == "quantiles") {
+                # use quantile-based grid
                 selected_splits <- unique(quantile(selected_column, probs = probs))
             } else {
-                selected_splits <- seq(min(selected_column, na.rm = TRUE), max(selected_column, na.rm = TRUE), length.out = grid_points)
+                # use uniformly spaced grid
+                selected_splits <- seq(min(selected_column, na.rm = TRUE),
+                                       max(selected_column, na.rm = TRUE),
+                                       length.out = grid_points)
             }
+            # ensure new_observation values are included in grid (if provided)
             if (!any(is.na(new_observation))) {
-                selected_splits <- sort(unique(c(selected_splits, na.omit(new_observation[, var]))))
+                selected_splits <- sort(unique(c(selected_splits,
+                                                 na.omit(new_observation[, var]))))
             }
         } else {
+            # categorical variable → use all unique observed levels
             if (any(is.na(new_observation))) {
                 selected_splits <- sort(unique(selected_column))
             } else {
+                # include new_observation levels if provided
                 selected_splits <- sort(unique(rbind(
                     data[, var, drop = FALSE],
                     new_observation[, var, drop = FALSE]
@@ -252,6 +336,8 @@ calculate_variable_split <- function(data, variables = colnames(data), categoric
         }
         selected_splits
     })
+
+    # assign variable names to list elements
     names(variable_splits) <- variables
     variable_splits
 }
